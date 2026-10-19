@@ -25,6 +25,22 @@ DATA_DIR = args.data_dir
 FEATURES_DIR = args.features_dir
 
 
+# Codes where the digit heuristic below picks the wrong split (checked against the USPTO CPC scheme pages).
+CPC_MAIN_GROUP_OVERRIDES = {"B60D1167": "1"}  # B60D 1/167, not 11/67
+
+
+def split_cpc(code: str) -> tuple[str, str]:
+    """'B60C1103FI' -> ('B60C 11', 'B60C 11/03').
+
+    The separator between main group and subgroup is missing from the data, so
+    this is a heuristic: 3 digits -> 1/23, 4 -> 12/34, 5 -> 12/345. On the small
+    dataset, every code but the overrides above maps to a symbol in the official scheme.
+    """
+    subclass, digits = re.match(r"([A-H]\d\d[A-Z])(\d+)", code).groups()
+    main = CPC_MAIN_GROUP_OVERRIDES.get(subclass + digits) or (digits[:1] if len(digits) == 3 else digits[:2])
+    return f"{subclass} {main}", f"{subclass} {main}/{digits[len(main):]}"
+
+
 @st.cache_data
 def load_patents(data_dir: str) -> pd.DataFrame:
     rows = []
@@ -34,6 +50,7 @@ def load_patents(data_dir: str) -> pd.DataFrame:
             rows.append({**p, "week": week})
     df = pd.DataFrame(rows).drop_duplicates("doc_number").set_index("doc_number")
     df["subclass"] = df["classification"].str[:4]
+    df["main_group"], df["subgroup"] = zip(*df["classification"].map(split_cpc))
     df["n_claims"] = df["claims"].str.len()
     df["n_paragraphs"] = df["detailed_description"].str.len()
     df["abstract_words"] = df["abstract"].str.split().str.len()
@@ -67,23 +84,54 @@ numeric_cols = [c for c in scalar_cols if pd.api.types.is_numeric_dtype(df[c])]
 st.title("Patent Viewer")
 st.caption(f"{len(df)} patents · {len(features.columns)} feature columns loaded from `{FEATURES_DIR}/`")
 
-browse, explore = st.tabs(["Browse", "Explore features"])
+browse, tree, explore = st.tabs(["Browse", "Classification tree", "Explore features"])
+
+
+def set_doc(d):
+    st.session_state.doc = d
+    st.session_state.pick = None
+
+
+def open_selected_row(key, rows):
+    sel = st.session_state[key].selection.rows
+    if sel:
+        set_doc(rows.index[sel[0]])
+
 
 with browse:
     if "doc" not in st.session_state:
         st.session_state.doc = df.sample(1).index[0]
     c1, c2 = st.columns([1, 3])
-    if c1.button("🎲 Random patent"):
-        st.session_state.doc = df.sample(1).index[0]
-    picked = c2.selectbox(
-        "Or pick one", df.index, index=None, placeholder="Search by doc number",
+    c1.button("🎲 Random patent", on_click=lambda: set_doc(df.sample(1).index[0]))
+    c2.selectbox(
+        "Or pick one", df.index, index=None, key="pick", placeholder="Search by doc number or title",
         format_func=lambda d: f"{d} — {df.at[d, 'title']}",
+        on_change=lambda: st.session_state.pick and set_doc(st.session_state.pick),
     )
-    doc = picked or st.session_state.doc
+    doc = st.session_state.doc
     p = df.loc[doc]
 
     st.header(p["title"])
+    path = [p["classification"][:1], p["classification"][:3], p["subclass"], p["main_group"], p["subgroup"]]
+    st.markdown(" → ".join(f"`{n}`" for n in path))
     st.dataframe(p[table_cols].astype(str).to_frame("value"), width="stretch")
+
+    st.subheader("Nearby in the classification tree")
+    level = st.radio(
+        "Other patents in the same", ["subgroup", "main_group", "subclass"], horizontal=True,
+        format_func=lambda lvl: f"{lvl.replace('_', ' ')} ({p[lvl]})",
+    )
+    rel = df[(df[level] == p[level]) & (df.index != doc)].sort_values(["subgroup", "week"])
+    if rel.empty:
+        st.info(f"No other patents in {p[level]}. Try a broader level.")
+    else:
+        st.caption(f"{len(rel)} other patents · click a row to open it")
+        key = f"rel_{doc}_{level}"  # fresh widget per patent/level so old selections don't carry over
+        st.dataframe(
+            rel[["title", "subgroup", "week"]], key=key, width="stretch",
+            on_select=lambda: open_selected_row(key, rel), selection_mode="single-row",
+        )
+
     st.subheader("Abstract")
     st.write(p["abstract"])
     with st.expander(f"Claims ({len(p['claims'])})"):
@@ -94,6 +142,17 @@ with browse:
             st.markdown(f"`[{i:04d}]` {para}")
     with st.expander("BibTeX"):
         st.code(p["bibtex"], language="bibtex")
+
+with tree:
+    st.caption(
+        "CPC hierarchy: subclass → main group → subgroup, sized by number of patents. Click a box to zoom in. "
+        "Subgroups are shown flat under their main group (the true dot-level nesting isn't in the data)."
+    )
+    counts = df.groupby(["subclass", "main_group", "subgroup"]).size().reset_index(name="patents")
+    fig = px.treemap(counts, path=[px.Constant("B60"), "subclass", "main_group", "subgroup"], values="patents")
+    fig.update_traces(root_color="lightgrey", textinfo="label+value")
+    fig.update_layout(height=750, margin=dict(t=30, l=0, r=0, b=0))
+    st.plotly_chart(fig, width="stretch")
 
 with explore:
     st.subheader("Table")
