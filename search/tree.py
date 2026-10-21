@@ -43,7 +43,27 @@ class Tree:
         self.level = np.array(level)
         self.parent = np.array(parent)
         self.children = [np.array(k, dtype=np.int64) for k in kids]
-        self.leaves = np.flatnonzero(self.level == CLAIM)
+
+        # Depth-first order of patents ("positions"); each node covers the contiguous positions [start, end)
+        # (a claim covers its patent's position). Leaves are stored in the same order, so the independent
+        # claims of position i are leaves[leaf_offset[i]:leaf_offset[i + 1]].
+        order, self.start, self.end = [], np.zeros(len(self.name), np.int64), np.zeros(len(self.name), np.int64)
+
+        def visit(n):
+            self.start[n] = len(order)
+            if level[n] == PATENT:
+                order.append(n)
+                self.start[kids[n]], self.end[kids[n]] = self.start[n], self.start[n] + 1
+            else:
+                for c in kids[n]:
+                    visit(c)
+            self.end[n] = len(order)
+
+        visit(root)
+        self.order = np.array(order, dtype=np.int64)  # position -> patent node
+        self.leaves = np.concatenate([self.children[n] for n in self.order])
+        self.leaf_offset = np.concatenate([[0], np.cumsum([len(self.children[n]) for n in self.order])])
+        self.cpc_node = {self.name[n]: n for n in range(len(self.name)) if 0 < level[n] < PATENT}  # "B60B 19" -> node
         self.patent_node = {p["doc_number"]: n for n, p in self.patent.items()}
 
     def print_report(self) -> None:

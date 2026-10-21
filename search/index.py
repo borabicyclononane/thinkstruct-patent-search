@@ -85,6 +85,10 @@ class Index:
                 valid[self.tree.children[n]] = False
         return valid
 
+    def has_candidate(self, nodes: np.ndarray, cand: np.ndarray) -> np.ndarray:
+        """For each node: does the sorted candidate-position array hit the node's range [start, end)?"""
+        return np.searchsorted(cand, self.tree.start[nodes]) < np.searchsorted(cand, self.tree.end[nodes])
+
     def _result(self, claims: np.ndarray, scores: np.ndarray, k: int | None) -> Result:
         order = np.lexsort((claims, -scores))  # ties (identical claim texts are common) broken by node id
         claims, scores = claims[order], scores[order]
@@ -92,24 +96,37 @@ class Index:
         first = np.sort(np.unique(pats, return_index=True)[1])  # each patent's best claim, in rank order
         return Result(claims[:k], scores[:k], pats[first][:k], scores[first][:k])
 
-    def flat_search(self, query: np.ndarray, k: int | None = None, valid: np.ndarray | None = None) -> Result:
-        """Score every independent claim; top-k claims and top-k patents (by best claim)."""
+    def flat_search(self, query: np.ndarray, k: int | None = None, valid: np.ndarray | None = None,
+                    cand: np.ndarray | None = None) -> Result:
+        """Score every independent claim; top-k claims and top-k patents (by best claim).
+        `cand` (sorted patent positions) pre-filters: only the candidates' claims are gathered and scored."""
         q = l2n(self.project(query[None]))[0]
-        if valid is None:
+        if valid is None and cand is None:
             return self._result(self.tree.leaves, self.score(q, self.leaf_K), k)
-        keep = valid[self.tree.leaves]
-        return self._result(self.tree.leaves[keep], self.score(q, self.leaf_K[keep]), k)
+        if cand is None:
+            idx = np.arange(len(self.tree.leaves))
+        else:  # concatenated slices leaf_offset[c]:leaf_offset[c + 1] for each candidate c
+            lo, n = self.tree.leaf_offset[cand], np.diff(self.tree.leaf_offset)[cand]
+            idx = np.repeat(lo - np.cumsum(n) + n, n) + np.arange(n.sum())
+        if valid is not None:
+            idx = idx[valid[self.tree.leaves[idx]]]
+        return self._result(self.tree.leaves[idx], self.score(q, self.leaf_K[idx]), k)
 
-    def beam_search(self, query: np.ndarray, B: int = 10, start_node: int = 0,
-                    valid: np.ndarray | None = None) -> Result:
+    def beam_search(self, query: np.ndarray, B: int = 10, start_node=0, valid: np.ndarray | None = None,
+                    cand: np.ndarray | None = None) -> Result:
         """Route down the tree keeping at most B nodes per level, until the beam holds (up to) B patents;
         then score all independent claims of those patents. Returns every claim of the B patents, ranked.
 
         Nodes that reach patent level early (a shallower CPC path) are carried along and compete with
         the next level's candidates on their own score.
+
+        Hybrid search: `start_node` may be several nodes (a union of CPC prefixes), and `cand` (sorted patent
+        positions passing keyword/title filters) prunes the tree: only children whose range holds a
+        candidate are scored.
         """
         q = l2n(self.project(query[None]))[0]
-        beam, beam_scores = np.array([start_node]), np.array([0.0])
+        beam = np.atleast_1d(np.asarray(start_node, dtype=np.int64))
+        beam_scores = np.zeros(len(beam))
         while True:
             done = self.tree.level[beam] >= PATENT
             if done.all():
@@ -117,10 +134,13 @@ class Index:
             kids = [self.children(n, valid) for n in beam[~done]]
             parent_scores = np.repeat(beam_scores[~done], [len(c) for c in kids])
             kids = np.concatenate(kids)
-            cand = np.concatenate([beam[done], kids])
-            cand_scores = np.concatenate([beam_scores[done], self.combine(parent_scores, self.score(q, self.K[kids]))])
-            keep = topk(cand_scores, B)
-            beam, beam_scores = cand[keep], cand_scores[keep]
+            if cand is not None:
+                ok = self.has_candidate(kids, cand)
+                kids, parent_scores = kids[ok], parent_scores[ok]
+            nodes = np.concatenate([beam[done], kids])
+            node_scores = np.concatenate([beam_scores[done], self.combine(parent_scores, self.score(q, self.K[kids]))])
+            keep = topk(node_scores, B)
+            beam, beam_scores = nodes[keep], node_scores[keep]
         claims = np.concatenate([self.children(p, valid) for p in beam]) if len(beam) else np.array([], dtype=np.int64)
         return self._result(claims, self.score(q, self.K[claims]), None)
 

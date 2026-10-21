@@ -39,7 +39,11 @@ def clean(text: str, stats: Counter | None = None) -> str:
 
 
 def cpc_path(code: str) -> tuple[str, ...]:
-    """'B60B1900FI' -> ('B', 'B60', 'B60B', 'B60B 19', 'B60B 19/00')."""
+    """'B60B1900FI' -> ('B', 'B60', 'B60B', 'B60B 19', 'B60B 19/00'); 'G01N21/47' (large dataset) -> (..., 'G01N 21/47')."""
+    if "/" in code:  # separator given, no main-group heuristic needed
+        subclass, main, sub = re.match(r"([A-H]\d\d[A-Z])\s*(\d+)/(\d+)", code).groups()
+        main = str(int(main))  # 'G06F017/60' -> 'G06F 17'
+        return code[0], code[:3], subclass, f"{subclass} {main}", f"{subclass} {main}/{sub}"
     subclass, digits = re.match(r"([A-H]\d\d[A-Z])(\d+)", code).groups()
     main = CPC_MAIN_GROUP_OVERRIDES.get(subclass + digits) or (digits[:1] if len(digits) == 3 else digits[:2])
     return code[0], code[:3], subclass, f"{subclass} {main}", f"{subclass} {main}/{digits[len(main):]}"

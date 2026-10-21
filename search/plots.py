@@ -144,6 +144,33 @@ def by_level(per_query, k, path, show_B=(10, 20, 50)):
     plt.close(fig)
 
 
+def hybrid_latency(timing: pd.DataFrame, path: str):
+    """Median latency per filter scenario (dots; line to p95), with the unfiltered searches as reference lines."""
+    methods = [("flat post-filter", RANDOM, "o"), ("flat pre-filter", FLAT, "D"), ("beam pruned", BEAM, "s")]
+    t = timing[timing["scenario"] != "no filter"]
+    order = t.drop_duplicates("scenario").sort_values("n_candidates")
+    y = {s: i for i, s in enumerate(order["scenario"])}
+    fig, ax = plt.subplots(figsize=(10, 6))
+    for (m, color, marker), dy in zip(methods, (0.2, 0, -0.2)):
+        d = t[t["method"] == m]
+        ys = d["scenario"].map(y) + dy
+        ax.hlines(ys, d["ms_median"], d["ms_p95"], color=color, lw=1, alpha=0.5)
+        ax.plot(d["ms_median"], ys, ls="none", marker=marker, ms=8, color=color, mec="white", mew=1, label=m)
+    for m, color in (("flat", FLAT), ("beam", BEAM)):
+        ms = timing.loc[(timing["scenario"] == "no filter") & (timing["method"] == m), "ms_median"].iloc[0]
+        ax.axvline(ms, color=color, lw=1.2, ls="--", label=f"{m}, no filter ({ms:.3f} ms)")
+    ax.set_yticks(list(y.values()), [f"{s}   ({n} patents)" for s, n in zip(order["scenario"], order["n_candidates"])])
+    ax.grid(axis="y", visible=False)
+    ax.set_xlim(left=0)
+    ax.set_xlabel("ms per query (dot = median, line to p95); filtered timings include resolving the filter")
+    ax.set_title(f"Hybrid search latency by filter ({timing['n_candidates'].max()} patents in the index; "
+                 f"query embedding ~40 ms not included)")
+    ax.legend(loc="lower right")
+    fig.tight_layout()
+    fig.savefig(path, dpi=150)
+    plt.close(fig)
+
+
 def _b_ticks(ax, Bs):
     ax.set_xticks(list(Bs), [str(b) if b in TICK_B else "" for b in Bs])
     ax.minorticks_off()

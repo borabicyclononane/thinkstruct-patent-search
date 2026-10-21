@@ -1,0 +1,12 @@
+scenario,n_candidates,violations,unlimited_beam_mismatches,beam_patent_overlap@10
+CPC subclass B60C,318,0,0,0.7643749999999983
+CPC subgroup B60B 27/00,34,0,0,0.9140624999999944
+CPC B60B 33 or B60D,59,0,0,0.8596874999999965
+keyword: tire,318,0,0,0.7243749999999995
+keyword: hub,138,0,0,0.6909375000000008
+keyword: non-pneumatic,32,0,0,0.8724999999999955
+keyword: hitch,8,0,0,1.0
+tire AND pressure,28,0,0,0.9135937499999958
+stud OR hitch,12,0,0,0.9699999999999968
+title = 'pneumatic tire',33,0,0,0.850312499999997
+B60C 11 + tread AND noise,3,0,0,1.0
