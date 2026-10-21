@@ -1,0 +1,6 @@
+PCA explained variance: PC1 0.091, PC2 0.058, top-10 0.361, top-50 0.698
+subclass (all)               n= 640  kNN@10 purity 0.862 (chance 0.465)  silhouette +0.002
+subclass (B60B vs B60C)      n= 616  kNN@10 purity 0.890 (chance 0.501)  silhouette +0.105
+main group (all)             n= 640  kNN@10 purity 0.382 (chance 0.066)  silhouette -0.080
+main group within B60B       n= 298  kNN@10 purity 0.305 (chance 0.115)  silhouette -0.082
+main group within B60C       n= 318  kNN@10 purity 0.506 (chance 0.163)  silhouette -0.039

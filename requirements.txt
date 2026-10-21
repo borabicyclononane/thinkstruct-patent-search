@@ -2,3 +2,7 @@ streamlit
 pandas
 plotly
 pyarrow
+sentence-transformers
+umap-learn
+scikit-learn
+matplotlib
