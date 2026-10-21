@@ -1,0 +1,14 @@
+# agave project settings, written by `agave init`. Commit this file.
+
+[project]
+github = "borabicyclononane/thinkstruct-patent-search"   # what the remote box clones (from `git remote get-url origin`)
+outputs_dir = "outputs"   # fetched results land here, relative to this file
+requirements = "requirements.txt"   # installed on the remote box before the script runs
+
+[kaggle]
+kernel = "boraginaceae/thinkstruct-patent-search-runner"   # notebook the runs are pushed to; the first `agave run --on kaggle` creates it
+machine_shape = "NvidiaTeslaT4"   # Kaggle's default P100 is not supported by current torch
+token_dataset = "boraginaceae/github-token"   # private dataset holding the GitHub token (API-pushed kernels cannot read Secrets)
+
+[colab]
+default_gpu = "T4"   # the cheapest; --gpu overrides per run
