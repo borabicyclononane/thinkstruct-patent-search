@@ -90,6 +90,14 @@ class Index:
         return np.searchsorted(cand, self.tree.start[nodes]) < np.searchsorted(cand, self.tree.end[nodes])
 
     def _result(self, claims: np.ndarray, scores: np.ndarray, k: int | None) -> Result:
+        if k is not None:  # partial top-k: only claims scoring at least the m-th best score get sorted
+            m = k
+            while m < len(scores):
+                keep = scores >= np.partition(scores, -m)[-m]  # ties at the threshold kept: an exact ranking prefix
+                if len(np.unique(self.tree.parent[claims[keep]])) >= k:  # enough distinct patents for top-k patents
+                    claims, scores = claims[keep], scores[keep]
+                    break
+                m *= 4
         order = np.lexsort((claims, -scores))  # ties (identical claim texts are common) broken by node id
         claims, scores = claims[order], scores[order]
         pats = self.tree.parent[claims]

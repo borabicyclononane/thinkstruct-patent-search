@@ -1,0 +1,14 @@
+scenario,n_candidates,violations,unlimited_beam_mismatches,beam_patent_overlap@10
+CPC section H,2465,0,0,0.4833333333333335
+CPC subclass G06F,804,0,0,0.4870000000000001
+CPC main group G06F 3,206,0,0,0.6089999999999994
+CPC subgroup G02B 27/0172,12,0,0,0.9879999999999999
+CPC A61K or C07D,413,0,0,0.5483333333333332
+keyword: method,4694,0,0,0.35100000000000003
+keyword: vehicle,485,0,0,0.2896666666666668
+keyword: antibody,67,0,0,0.5639999999999993
+keyword: crispr,5,0,0,1.0
+wireless AND battery,9,0,0,1.0
+lidar OR radar,34,0,0,0.7346666666666664
+title = 'display device',24,0,0,0.7153333333333333
+G06F + neural AND network,4,0,0,1.0

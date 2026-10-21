@@ -1,0 +1,79 @@
+10000 patents, 24466 independent claims; sample report: {'batch files read': 17, 'patents read': 16163, 'claims independent': 24466, 'claims dependent': 157581, 'dropped: classification N/A': 6146, 'claims cancelled': 4737, 'dropped: no live independent claim': 5, 'dropped: duplicate doc_number': 12, 'claims empty': 12}
+embedded 20000/24466 (0 s this run; 27.9 claims/s fresh; ~3 min left at most)
+embedded 24466/24466 (0 s this run; 27.9 claims/s fresh; ~0 min left at most)
+W1021 11:45:22.814000 37694 torch/distributed/elastic/multiprocessing/redirects.py:35] NOTE: Redirects are currently not supported in MacOs.
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+tree level    nodes  patents per node (min / median / max)
+  section         8  51 / 898 / 2491
+  class         119  1 / 20 / 1308
+  subclass      468  1 / 6 / 804
+  main_group   1941  1 / 2 / 206
+  subgroup     7009  1 / 1 / 12
+  patent       9000
+  claim       22036  (independent claims, leaves)
+build: {'tree_s': '0.05 s', 'embed_s': '0.05 s', 'keys_s': '0.21 s'}
+Loading weights:   0%|          | 0/199 [00:00<?, ?it/s]Loading weights: 100%|██████████| 199/199 [00:00<00:00, 38966.69it/s]
+eval: 72 s
+        method    B  k  agree_section  agree_class  agree_subclass  agree_main_group  agree_subgroup  ndcg  knn_section  knn_class  knn_subclass  knn_main_group  knn_subgroup  claim_overlap  patent_overlap
+          flat <NA> 10          0.575        0.429           0.297             0.132           0.011 0.387        0.690      0.590         0.453           0.240         0.029            NaN             NaN
+          beam   10 10          0.640        0.492           0.346             0.156           0.015 0.437        0.699      0.565         0.428           0.227         0.029          0.473           0.410
+          beam   15 10          0.629        0.480           0.340             0.151           0.014 0.428        0.702      0.572         0.444           0.224         0.032          0.568           0.515
+          beam   20 10          0.623        0.472           0.332             0.146           0.013 0.421        0.709      0.579         0.449           0.226         0.032          0.639           0.593
+          beam   30 10          0.612        0.460           0.322             0.142           0.013 0.413        0.709      0.578         0.436           0.236         0.030          0.732           0.691
+          beam   50 10          0.601        0.451           0.312             0.138           0.012 0.406        0.696      0.576         0.452           0.236         0.028          0.829           0.797
+          beam  100 10          0.590        0.441           0.304             0.135           0.011 0.396        0.691      0.589         0.454           0.239         0.029          0.927           0.910
+        random <NA> 10          0.202        0.066           0.021             0.003           0.000 0.075        0.245      0.105         0.036           0.004         0.000            NaN             NaN
+majority class <NA> 10            NaN          NaN             NaN               NaN             NaN   NaN        0.271      0.145         0.087           0.020         0.001            NaN             NaN 
+
+                                               operation    B    ms_mean     n  ms_median  ms_p95
+embed independent claims (fresh, all claims ever cached) <NA> 876998.488 24445        NaN     NaN
+                                              build tree <NA>     51.763     1        NaN     NaN
+                                          aggregate keys <NA>    207.755     1        NaN     NaN
+                                             embed query <NA>     35.081  1000     30.727  69.603
+                                             flat search <NA>      1.255  3000      1.249   1.387
+                                             beam search    1      0.075  3000      0.074   0.089
+                                             beam search    2      0.090  3000      0.088   0.109
+                                             beam search    3      0.110  3000      0.107   0.140
+                                             beam search    5      0.130  3000      0.125   0.168
+                                             beam search    7      0.167  3000      0.158   0.218
+                                             beam search   10      0.192  3000      0.187   0.260
+                                             beam search   15      0.241  3000      0.240   0.326
+                                             beam search   20      0.304  3000      0.302   0.407
+                                             beam search   30      0.413  3000      0.412   0.557
+                                             beam search   50      0.644  3000      0.648   0.846
+                                             beam search  100      1.293  3000      1.319   1.657 
+
+hybrid: 52 s
+method                                  beam  beam pruned  flat  flat post-filter  flat pre-filter  resolve filter only
+scenario                  n_candidates                                                                                 
+no filter                 9000         0.208          NaN 1.250               NaN              NaN                  NaN
+keyword: method           4694           NaN        0.189   NaN             1.387            4.698                0.013
+CPC section H             2465           NaN        0.149   NaN             1.157            2.114                0.001
+CPC subclass G06F         804            NaN        0.101   NaN             1.120            0.450                0.001
+keyword: vehicle          485            NaN        0.132   NaN             1.117            0.270                0.007
+CPC A61K or C07D          413            NaN        0.093   NaN             1.114            0.254                0.002
+CPC main group G06F 3     206            NaN        0.062   NaN             1.117            0.088                0.002
+keyword: antibody         67             NaN        0.108   NaN             1.144            0.085                0.005
+lidar OR radar            34             NaN        0.161   NaN             1.110            0.083                0.012
+title = 'display device'  24             NaN        0.101   NaN             1.098            0.064                0.001
+CPC subgroup G02B 27/0172 12             NaN        0.032   NaN             1.117            0.029                0.002
+wireless AND battery      9              NaN        0.115   NaN             1.138            0.049                0.021
+keyword: crispr           5              NaN        0.084   NaN             1.098            0.029                0.005
+G06F + neural AND network 4              NaN        0.077   NaN             1.189            0.052                0.027 
+
+                 scenario  n_candidates  violations  unlimited_beam_mismatches  beam_patent_overlap@10
+            CPC section H          2465           0                          0                   0.483
+        CPC subclass G06F           804           0                          0                   0.487
+    CPC main group G06F 3           206           0                          0                   0.609
+CPC subgroup G02B 27/0172            12           0                          0                   0.988
+         CPC A61K or C07D           413           0                          0                   0.548
+          keyword: method          4694           0                          0                   0.351
+         keyword: vehicle           485           0                          0                   0.290
+        keyword: antibody            67           0                          0                   0.564
+          keyword: crispr             5           0                          0                   1.000
+     wireless AND battery             9           0                          0                   1.000
+           lidar OR radar            34           0                          0                   0.735
+ title = 'display device'            24           0                          0                   0.715
+G06F + neural AND network             4           0                          0                   1.000
+
+all checks passed; written to /Users/aryan/Documents/Aryan/CS/Thinkstruct app/experiment-big-data/results_10000/

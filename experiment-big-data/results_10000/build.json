@@ -1,0 +1,27 @@
+{
+ "n_patents": 10000,
+ "n_index_patents": 9000,
+ "n_queries": 1000,
+ "n_index_claims": 22036,
+ "n_tree_nodes": 40582,
+ "build_seconds": {
+  "tree_s": 0.05176320800092071,
+  "embed_s": 0.0490347919985652,
+  "keys_s": 0.20775508299993817
+ },
+ "sample_report": {
+  "batch files read": 17,
+  "patents read": 16163,
+  "claims independent": 24466,
+  "claims dependent": 157581,
+  "dropped: classification N/A": 6146,
+  "claims cancelled": 4737,
+  "dropped: no live independent claim": 5,
+  "dropped: duplicate doc_number": 12,
+  "claims empty": 12
+ },
+ "embedding_meta": {
+  "embed_seconds": 876.9984877910028,
+  "n_embedded": 24445
+ }
+}

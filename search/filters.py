@@ -83,7 +83,7 @@ class TextIndex:
     def keyword(self, keyword: str, fields=FIELDS) -> np.ndarray:
         """Positions where every word of `keyword` occurs in one of `fields`."""
         hits = [_intersect([self.post[f].get(t, EMPTY) for t in query_terms(keyword)]) for f in fields]
-        return _union(hits)
+        return _union(hits, len(self.index.tree.order))
 
     def resolve(self, f: Filter) -> tuple[np.ndarray, np.ndarray | None]:
         """-> (beam start nodes, sorted candidate positions or None if there is no keyword/title filter).
@@ -95,7 +95,7 @@ class TextIndex:
             starts = np.array(sorted(n for n in nodes if not _has_ancestor(tree, n, nodes)), dtype=np.int64)
         lists = [self.keyword(k, f.fields) for k in f.all_of]
         if f.any_of:
-            lists.append(_union([self.keyword(k, f.fields) for k in f.any_of]))
+            lists.append(_union([self.keyword(k, f.fields) for k in f.any_of], len(tree.order)))
         if f.title is not None:
             lists.append(self.titles.get(normalize_title(f.title), EMPTY))
         if not lists:
@@ -142,8 +142,13 @@ def _intersect(lists: list[np.ndarray]) -> np.ndarray:
     return out
 
 
-def _union(lists: list[np.ndarray]) -> np.ndarray:
-    return np.unique(np.concatenate(lists)) if lists else EMPTY
+def _union(lists: list[np.ndarray], n: int) -> np.ndarray:
+    """OR of sorted position arrays (positions < n): mark them in a length-n boolean array, read back in order.
+    O(n + total length), no sort; np.unique (a sort) was 40x slower for two ~3.4k-long lists."""
+    mask = np.zeros(n, dtype=bool)
+    for positions in lists:
+        mask[positions] = True
+    return np.flatnonzero(mask)
 
 
 def hybrid_search(index: Index, text: TextIndex, query: np.ndarray, f: Filter, k: int | None = 10, B: int = 10,
