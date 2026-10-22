@@ -2,8 +2,11 @@
 __pycache__/
 .DS_Store
 
-# provided task materials, not part of the submission
-data/
+# provided task materials and caches, not part of the submission; the scraped claims are ours
+data/*
+!data/scraped/
+data/scraped/*
+!data/scraped/claims.jsonl
 thinkstruct-coding-task.pdf
 coding_challenge_large_data.zip
 AGENTS.md

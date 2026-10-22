@@ -1,0 +1,90 @@
+device: cpu 
+1191 claims (857 used as training keys); queries: 2504 train, 349 dev (51 train patents held out for model selection), 363 val
+training on 3294 pairs, 20 epochs per configuration; dev score = mean share of dev sources returned by beam search at B=[5, 10, 30]
+  towers routing=0 lr=0.001    best dev score 0.731 at epoch 15 (untrained 0.663); 9 s so far
+  towers routing=0 lr=0.0003   best dev score 0.743 at epoch  5 (untrained 0.663); 16 s so far
+  towers routing=0 lr=0.0001   best dev score 0.752 at epoch  4 (untrained 0.663); 23 s so far
+  towers routing=1 lr=0.001    best dev score 0.835 at epoch 15 (untrained 0.663); 38 s so far
+  towers routing=1 lr=0.0003   best dev score 0.834 at epoch 15 (untrained 0.663); 53 s so far
+  towers routing=1 lr=0.0001   best dev score 0.835 at epoch  8 (untrained 0.663); 67 s so far
+  towers routing=3 lr=0.001    best dev score 0.844 at epoch  9 (untrained 0.663); 82 s so far
+  towers routing=3 lr=0.0003   best dev score 0.842 at epoch  4 (untrained 0.663); 96 s so far
+  towers routing=3 lr=0.0001   best dev score 0.846 at epoch 20 (untrained 0.663); 111 s so far
+
+HEADLINE (all, 363 val queries): share whose source claim comes back from the search
+                                 dev        flat   beam B=1   beam B=5  beam B=10  beam B=30 beam B=100
+raw 768-d cosine               0.808       1.000      0.262      0.595      0.736      0.884      0.975
+PCA-64                         0.701       1.000      0.190      0.468      0.634      0.810      0.937
+towers untrained               0.663       1.000      0.201      0.427      0.548      0.730      0.884
+towers routing=0 lr=0.001      0.731       1.000      0.058      0.419      0.623      0.818      0.959
+towers routing=0 lr=0.0003     0.743       1.000      0.094      0.496      0.689      0.846      0.964
+towers routing=0 lr=0.0001     0.752       1.000      0.127      0.532      0.669      0.840      0.961
+towers routing=1 lr=0.001      0.835       1.000      0.226      0.556      0.697      0.851      0.961
+towers routing=1 lr=0.0003     0.834       1.000      0.264      0.579      0.697      0.835      0.942
+towers routing=1 lr=0.0001     0.835       1.000      0.292      0.617      0.738      0.887      0.978
+towers routing=3 lr=0.001      0.844       1.000      0.248      0.625      0.738      0.879      0.972
+towers routing=3 lr=0.0003     0.842       1.000      0.281      0.612      0.766      0.893      0.972
+towers routing=3 lr=0.0001     0.846       1.000      0.267      0.620      0.716      0.860      0.961  <- chosen on dev
+
+HEADLINE (combination, 121 val queries): share whose source claim comes back from the search
+                                 dev        flat   beam B=1   beam B=5  beam B=10  beam B=30 beam B=100
+raw 768-d cosine               0.808       1.000      0.512      0.876      0.942      1.000      1.000
+PCA-64                         0.701       1.000      0.347      0.802      0.909      0.983      1.000
+towers untrained               0.663       1.000      0.364      0.711      0.860      0.926      0.992
+towers routing=0 lr=0.001      0.731       1.000      0.083      0.603      0.818      0.950      0.992
+towers routing=0 lr=0.0003     0.743       1.000      0.157      0.694      0.893      0.975      1.000
+towers routing=0 lr=0.0001     0.752       1.000      0.231      0.752      0.893      0.992      1.000
+towers routing=1 lr=0.001      0.835       1.000      0.289      0.752      0.876      0.950      0.992
+towers routing=1 lr=0.0003     0.834       1.000      0.405      0.760      0.843      0.959      0.992
+towers routing=1 lr=0.0001     0.835       1.000      0.455      0.835      0.950      0.992      1.000
+towers routing=3 lr=0.001      0.844       1.000      0.364      0.802      0.893      0.975      1.000
+towers routing=3 lr=0.0003     0.842       1.000      0.421      0.793      0.942      0.983      1.000
+towers routing=3 lr=0.0001     0.846       1.000      0.438      0.826      0.901      0.975      1.000  <- chosen on dev
+
+HEADLINE (element_reuse, 121 val queries): share whose source claim comes back from the search
+                                 dev        flat   beam B=1   beam B=5  beam B=10  beam B=30 beam B=100
+raw 768-d cosine               0.808       1.000      0.074      0.405      0.579      0.785      0.942
+PCA-64                         0.701       1.000      0.050      0.165      0.397      0.636      0.851
+towers untrained               0.663       1.000      0.041      0.207      0.314      0.554      0.802
+towers routing=0 lr=0.001      0.731       1.000      0.025      0.289      0.479      0.669      0.893
+towers routing=0 lr=0.0003     0.743       1.000      0.041      0.331      0.512      0.694      0.909
+towers routing=0 lr=0.0001     0.752       1.000      0.050      0.347      0.488      0.694      0.901
+towers routing=1 lr=0.001      0.835       1.000      0.099      0.322      0.471      0.719      0.909
+towers routing=1 lr=0.0003     0.834       1.000      0.124      0.388      0.512      0.694      0.868
+towers routing=1 lr=0.0001     0.835       1.000      0.165      0.413      0.554      0.752      0.934
+towers routing=3 lr=0.001      0.844       1.000      0.083      0.421      0.537      0.752      0.926
+towers routing=3 lr=0.0003     0.842       1.000      0.165      0.405      0.570      0.785      0.926
+towers routing=3 lr=0.0001     0.846       1.000      0.140      0.397      0.479      0.727      0.909  <- chosen on dev
+
+HEADLINE (paraphrase, 121 val queries): share whose source claim comes back from the search
+                                 dev        flat   beam B=1   beam B=5  beam B=10  beam B=30 beam B=100
+raw 768-d cosine               0.808       1.000      0.198      0.504      0.686      0.868      0.983
+PCA-64                         0.701       1.000      0.174      0.438      0.595      0.810      0.959
+towers untrained               0.663       1.000      0.198      0.364      0.471      0.711      0.860
+towers routing=0 lr=0.001      0.731       1.000      0.066      0.364      0.570      0.835      0.992
+towers routing=0 lr=0.0003     0.743       1.000      0.083      0.463      0.661      0.868      0.983
+towers routing=0 lr=0.0001     0.752       1.000      0.099      0.496      0.628      0.835      0.983
+towers routing=1 lr=0.001      0.835       1.000      0.289      0.595      0.744      0.884      0.983
+towers routing=1 lr=0.0003     0.834       1.000      0.264      0.587      0.736      0.851      0.967
+towers routing=1 lr=0.0001     0.835       1.000      0.256      0.603      0.711      0.917      1.000
+towers routing=3 lr=0.001      0.844       1.000      0.298      0.653      0.785      0.909      0.992
+towers routing=3 lr=0.0003     0.842       1.000      0.256      0.636      0.785      0.909      0.992
+towers routing=3 lr=0.0001     0.846       1.000      0.223      0.636      0.769      0.876      0.975  <- chosen on dev
+
+RANKING (363 val queries, all 1191 claims)
+raw 768-d cosine               MRR 0.508 [0.47, 0.55]  R@1 0.40  R@10 0.70  R@100 0.94
+PCA-64                         MRR 0.430 [0.39, 0.48]  R@1 0.32  R@10 0.63  R@100 0.90
+towers untrained               MRR 0.351 [0.31, 0.39]  R@1 0.24  R@10 0.54  R@100 0.80
+towers routing=0 lr=0.001      MRR 0.392 [0.35, 0.43]  R@1 0.26  R@10 0.66  R@100 0.92
+towers routing=0 lr=0.0003     MRR 0.455 [0.41, 0.50]  R@1 0.33  R@10 0.72  R@100 0.92
+towers routing=0 lr=0.0001     MRR 0.463 [0.42, 0.51]  R@1 0.34  R@10 0.71  R@100 0.91
+towers routing=1 lr=0.001      MRR 0.379 [0.34, 0.42]  R@1 0.25  R@10 0.63  R@100 0.91
+towers routing=1 lr=0.0003     MRR 0.401 [0.36, 0.44]  R@1 0.29  R@10 0.62  R@100 0.90
+towers routing=1 lr=0.0001     MRR 0.465 [0.42, 0.51]  R@1 0.35  R@10 0.70  R@100 0.93
+towers routing=3 lr=0.001      MRR 0.433 [0.39, 0.47]  R@1 0.31  R@10 0.67  R@100 0.93
+towers routing=3 lr=0.0003     MRR 0.434 [0.39, 0.48]  R@1 0.32  R@10 0.68  R@100 0.94
+towers routing=3 lr=0.0001     MRR 0.423 [0.38, 0.47]  R@1 0.31  R@10 0.64  R@100 0.91
+
+115 s; written to /Users/aryan/Documents/Aryan/CS/Thinkstruct app/training/runs/20261021-183733/ (metrics.json, search_eval.csv, curve.csv, towers.pt)
+.venv/bin/python3.14 -u training/train_towers.py --bundle  --epochs 20  123.45s user 23.93s system 126% cpu 1:56.21 total
+exit 0

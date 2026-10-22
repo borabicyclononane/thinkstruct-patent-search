@@ -1,15 +1,14 @@
 # Results
 
-All numbers come from the scripts below, run on one Apple M3 CPU (numpy 2.5, torch 2.14).
+All numbers come from the commands below, run on one Apple M3 CPU (numpy 2.5, torch 2.14).
 Latency is the median per query, measured from the query's 768-d embedding.
 Embedding the query text with PatentSBERTa adds about 36 ms, the same for every method.
 
 ```
-.venv/bin/python3.14 results/compare_part1.py                 # Part 1, default dataset  -> part1_default.csv
-.venv/bin/python3.14 results/compare_part1.py --sample 10000  # Part 1, 10^4 sample      -> part1_sample10000.csv
-.venv/bin/python3.14 -m search hybrid                         # Part 1b, default dataset -> hybrid_timing.csv, hybrid_checks.csv
-.venv/bin/python3.14 experiment-big-data/run.py --n 10000     # Part 1b, 10^4 sample     -> ../experiment-big-data/results_10000/
-.venv/bin/python3.14 results/compare_part3.py                 # Part 3                   -> part3.csv
+make part1   # default dataset: Part 1 + 1b
+make large   # 10^4 sample: Part 1 + 1b
+make part3   # train and evaluate the towers
+make readme  # this file
 ```
 
 ## Part 1: is beam search better than flat search?
@@ -147,10 +146,10 @@ The "no filter" row shows plain flat search and plain beam search.
 
 | method                         | config            | paraphrase | element reuse | combination |   all |     all vs raw 768 | val all | ms / query | training |
 | ------------------------------ | ----------------- | ---------: | ------------: | ----------: | ----: | -----------------: | ------: | ---------: | -------: |
-| raw 768-d                      | —                 |      0.622 |         0.311 |       0.924 | 0.619 |                  — |   0.595 |      0.086 |        — |
-| PCA-64                         | —                 |      0.496 |         0.134 |       0.748 | 0.459 |  +7 / −64, p<0.001 |   0.468 |      0.072 |        — |
-| shared towers, no routing loss | routing=0 lr=1e-4 |      0.479 |         0.412 |       0.681 | 0.524 | +36 / −70, p=0.001 |   0.532 |      0.099 |      8 s |
-| shared towers                  | routing=3 lr=1e-3 |      0.714 |         0.412 |       0.815 | 0.647 | +51 / −41, p=0.348 |   0.625 |      0.100 |     14 s |
-| per-level towers               | routing=1 lr=3e-4 |      0.605 |         0.445 |       0.807 | 0.619 | +48 / −48, p=1.000 |   0.653 |      0.356 |     26 s |
+| raw 768-d                      | —                 |      0.622 |         0.311 |       0.924 | 0.619 |                  — |   0.595 |      0.094 |        — |
+| PCA-64                         | —                 |      0.496 |         0.134 |       0.748 | 0.459 |  +7 / −64, p<0.001 |   0.468 |      0.074 |        — |
+| shared towers, no routing loss | routing=0 lr=1e-4 |      0.479 |         0.412 |       0.681 | 0.524 | +36 / −70, p=0.001 |   0.532 |      0.101 |      8 s |
+| shared towers                  | routing=3 lr=1e-3 |      0.714 |         0.412 |       0.815 | 0.647 | +51 / −41, p=0.348 |   0.625 |      0.102 |     14 s |
+| per-level towers               | routing=1 lr=3e-4 |      0.605 |         0.445 |       0.807 | 0.619 | +48 / −48, p=1.000 |   0.653 |      0.358 |     26 s |
 
-Val results and per-dataset sign tests are in `part3.csv`. The full training grid is in `../training/runs/20261021-203151/`.
+Val results and per-dataset sign tests are in `part3.csv`. The full training grid is in `../training/runs/final/`.
