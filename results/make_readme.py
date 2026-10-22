@@ -55,7 +55,7 @@ def hybrid(tpath):
 
 p3 = pd.read_csv("results/part3.csv")
 train_s = {"shared towers, no routing loss": "8 s", "shared towers": "14 s", "per-level towers": "26 s"}
-label = {"raw 768": "raw 768-d", "PCA-64": "PCA-64", "shared towers, no routing loss": "shared towers, no routing loss",
+label = {"flat, raw 768": "flat search, raw 768-d", "raw 768": "raw 768-d", "PCA-64": "PCA-64", "shared towers, no routing loss": "shared towers, no routing loss",
          "shared towers": "shared towers", "per-level towers": "per-level towers"}
 def part3(B):
     """Test table at beam width B."""
@@ -142,13 +142,14 @@ The "no filter" row shows plain flat search and plain beam search.
 
 **Split.** Train / val / test by patent, 80/10/10. Test has 119 queries per dataset.
 
-**Metric.** The share of queries whose source claim is among the claims beam search returns at **B=5** and **B=30**, over a tree of all 1,191 claims. A combination counts only if **both** of its source claims come back.
+**Metric.** The share of queries whose source claim is among the claims the search returns at **B=5** and **B=30**, over a tree of all 1,191 claims. A combination counts only if **both** of its source claims come back.
 
 **Methods.** All are on frozen PatentSBERTa embeddings.
+- **flat search, raw 768-d:** a reference, not beam search. It scores every claim and keeps all claims of its top B patents, as in Part 1.
 - **raw 768-d** and **PCA-64:** PCA is fit on the training claims.
 - **Towers:** a 768 → 64 query tower and key tower, trained with InfoNCE. "Routing loss" adds a cross-entropy at each CPC level, so the query scores its source's ancestors above the other nodes. **Per-level towers** use a separate query tower for each level of the tree.
 - **Tower configuration:** each tower row uses the grid configuration with the best **val** score at B=5. The tables therefore report **test**, which was not used for any choice.
-- **all vs raw 768:** test queries where the method finds the source and raw 768-d doesn't, then the reverse, with an exact two-sided sign test.
+- **all vs raw 768:** test queries where the method finds the source and raw 768-d beam search doesn't, then the reverse, with an exact two-sided sign test.
 - **Training:** wall time for 20 epochs on CPU, including a beam-search evaluation on the dev set after every epoch.
 
 **B=5**

@@ -109,33 +109,36 @@ The "no filter" row shows plain flat search and plain beam search.
 
 **Split.** Train / val / test by patent, 80/10/10. Test has 119 queries per dataset.
 
-**Metric.** The share of queries whose source claim is among the claims beam search returns at **B=5** and **B=30**, over a tree of all 1,191 claims. A combination counts only if **both** of its source claims come back.
+**Metric.** The share of queries whose source claim is among the claims the search returns at **B=5** and **B=30**, over a tree of all 1,191 claims. A combination counts only if **both** of its source claims come back.
 
 **Methods.** All are on frozen PatentSBERTa embeddings.
+- **flat search, raw 768-d:** a reference, not beam search. It scores every claim and keeps all claims of its top B patents, as in Part 1.
 - **raw 768-d** and **PCA-64:** PCA is fit on the training claims.
 - **Towers:** a 768 → 64 query tower and key tower, trained with InfoNCE. "Routing loss" adds a cross-entropy at each CPC level, so the query scores its source's ancestors above the other nodes. **Per-level towers** use a separate query tower for each level of the tree.
 - **Tower configuration:** each tower row uses the grid configuration with the best **val** score at B=5. The tables therefore report **test**, which was not used for any choice.
-- **all vs raw 768:** test queries where the method finds the source and raw 768-d doesn't, then the reverse, with an exact two-sided sign test.
+- **all vs raw 768:** test queries where the method finds the source and raw 768-d beam search doesn't, then the reverse, with an exact two-sided sign test.
 - **Training:** wall time for 20 epochs on CPU, including a beam-search evaluation on the dev set after every epoch.
 
 **B=5**
 
 | method                         | config            | paraphrase | element reuse | combination |   all |     all vs raw 768 | val all | ms / query | training |
 | ------------------------------ | ----------------- | ---------: | ------------: | ----------: | ----: | -----------------: | ------: | ---------: | -------: |
-| raw 768-d                      | —                 |      0.622 |         0.311 |       0.227 | 0.387 |                  — |   0.355 |      0.088 |        — |
-| PCA-64                         | —                 |      0.496 |         0.134 |       0.076 | 0.235 |  +6 / −60, p<0.001 |   0.242 |      0.076 |        — |
+| flat search, raw 768-d         | —                 |      0.731 |         0.445 |       0.361 | 0.513 | +55 / −10, p<0.001 |   0.479 |      0.050 |        — |
+| raw 768-d                      | —                 |      0.622 |         0.311 |       0.227 | 0.387 |                  — |   0.355 |      0.090 |        — |
+| PCA-64                         | —                 |      0.496 |         0.134 |       0.076 | 0.235 |  +6 / −60, p<0.001 |   0.242 |      0.077 |        — |
 | shared towers, no routing loss | routing=0 lr=1e-4 |      0.513 |         0.378 |       0.101 | 0.331 | +47 / −67, p=0.075 |   0.303 |      0.104 |      8 s |
-| shared towers                  | routing=1 lr=1e-4 |      0.647 |         0.479 |       0.160 | 0.429 | +62 / −47, p=0.180 |   0.391 |      0.104 |     14 s |
-| per-level towers               | routing=1 lr=3e-4 |      0.613 |         0.471 |       0.202 | 0.429 | +58 / −43, p=0.163 |   0.419 |      0.363 |     26 s |
+| shared towers                  | routing=1 lr=1e-4 |      0.647 |         0.479 |       0.160 | 0.429 | +62 / −47, p=0.180 |   0.391 |      0.105 |     14 s |
+| per-level towers               | routing=1 lr=3e-4 |      0.613 |         0.471 |       0.202 | 0.429 | +58 / −43, p=0.163 |   0.419 |      0.361 |     26 s |
 
 **B=30** (same configurations, chosen at B=5)
 
 | method                         | config            | paraphrase | element reuse | combination |   all |     all vs raw 768 | val all | ms / query | training |
 | ------------------------------ | ----------------- | ---------: | ------------: | ----------: | ----: | -----------------: | ------: | ---------: | -------: |
-| raw 768-d                      | —                 |      0.891 |         0.681 |       0.613 | 0.728 |                  — |   0.727 |      0.137 |        — |
-| PCA-64                         | —                 |      0.857 |         0.504 |       0.420 | 0.594 | +11 / −59, p<0.001 |   0.603 |      0.097 |        — |
+| flat search, raw 768-d         | —                 |      0.874 |         0.714 |       0.613 | 0.734 | +14 / −12, p=0.845 |   0.747 |      0.079 |        — |
+| raw 768-d                      | —                 |      0.891 |         0.681 |       0.613 | 0.728 |                  — |   0.727 |      0.150 |        — |
+| PCA-64                         | —                 |      0.857 |         0.504 |       0.420 | 0.594 | +11 / −59, p<0.001 |   0.603 |      0.098 |        — |
 | shared towers, no routing loss | routing=0 lr=1e-4 |      0.849 |         0.714 |       0.521 | 0.695 | +40 / −52, p=0.251 |   0.658 |      0.125 |      8 s |
 | shared towers                  | routing=1 lr=1e-4 |      0.899 |         0.765 |       0.605 | 0.756 | +46 / −36, p=0.320 |   0.730 |      0.127 |     14 s |
-| per-level towers               | routing=1 lr=3e-4 |      0.874 |         0.756 |       0.605 | 0.745 | +40 / −34, p=0.561 |   0.760 |      0.386 |     26 s |
+| per-level towers               | routing=1 lr=3e-4 |      0.874 |         0.756 |       0.605 | 0.745 | +40 / −34, p=0.561 |   0.760 |      0.389 |     26 s |
 
 Val results and per-dataset sign tests are in `part3.csv`. The full training grid is in `../training/runs/final/`.

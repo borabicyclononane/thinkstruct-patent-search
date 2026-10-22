@@ -6,7 +6,8 @@ towers; per synthetic dataset; val and test; plus query latency.
 Towers, each the configuration of the run's grid with the highest val share returned at B=5 (search_eval.csv):
 shared towers without the routing loss, shared towers (any routing weight), per-level query towers. Val picked them,
 so test is the unbiased number. Source returned = the source claim is among the returned claims (combination: both sources).
-Sign test: paired, against raw 768 at the same width. Writes results/part3.csv.
+Reference: flat search with raw 768, keeping all claims of its top B patents.
+Sign test: paired, against raw 768 beam search at the same width. Writes results/part3.csv.
 """
 import argparse
 import math
@@ -44,7 +45,17 @@ tree, claim_of_leaf = claim_tree(b)
 leaf_of_claim = {c: l for l, c in claim_of_leaf.items()}
 leaf_vecs = b["claim_vecs"][[claim_of_leaf[l] for l in tree.leaves]]
 indexes = {name: Index(tree, leaf_vecs, project=kf, project_query=qf) for name, (qf, kf) in maps.items()}
-METHODS = list(indexes)
+FLAT = "flat, raw 768"
+METHODS = list(indexes) + [FLAT]
+
+
+def run(method, q, B):
+    """Returned claim leaves: beam search, or all claims of flat search's top B patents."""
+    if method == FLAT:
+        return {l for p in indexes["raw 768"].flat_search(q, B).patents[:B] for l in tree.children[p]}
+    return set(indexes[method].beam_search(q, B).claims.tolist())
+
+
 def sign_p(x, y):
     x, y = int(x), int(y)
     return min(1.0, 2 * sum(math.comb(x + y, i) for i in range(min(x, y) + 1)) / 2 ** (x + y)) if x + y else 1.0
@@ -58,7 +69,7 @@ for split in ("val", "test"):
         for B in W:
             found = []
             for qi in qs:
-                got = set(indexes[method].beam_search(b["query_vecs"][qi], B).claims.tolist())
+                got = run(method, b["query_vecs"][qi], B)
                 src = [leaf_of_claim[a] for a in b["answers"][qi] if a >= 0]
                 found.append(all(s in got for s in src))
             found = np.array(found)
@@ -87,7 +98,7 @@ queries = b["query_vecs"][np.isin(b["query_split"], ["val", "test"])]
 res = pd.DataFrame(rows)
 for method in METHODS:
     for B in W:
-        res.loc[(res.method == method) & (res.B == B), "ms_median"] = latency(lambda q: indexes[method].beam_search(q, B), queries)
+        res.loc[(res.method == method) & (res.B == B), "ms_median"] = latency(lambda q: run(method, q, B), queries)
 res.to_csv("results/part3.csv", index=False)
 with pd.option_context("display.width", 220, "display.float_format", "{:.3f}".format):
     print(res[res.dataset == "all"].to_string(index=False))
