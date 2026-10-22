@@ -4,6 +4,8 @@ Search over patent claims that walks the CPC classification tree (beam search) i
 
 All results and tables are in [results/README.md](results/README.md).
 
+The written side of the part 2 system design question is in part_2_system_design.md. 
+
 ## Design choices
 
 ### Problem statement
