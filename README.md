@@ -6,6 +6,8 @@ All results and tables are in [results/README.md](results/README.md).
 
 The written side of the part 2 system design question is in part_2_system_design.md. 
 
+AI Disclaimer: AI was used quite liberally for all parts of the project (no lines of code are hand-written). Core design choices and experiments are human-made (with AI occasionally used to brainstorm ideas) and all markdown files are human-reviewed and edited. I take responsibility for the contents of this repo.
+
 ## Design choices
 
 ### Problem statement
