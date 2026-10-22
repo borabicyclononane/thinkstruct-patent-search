@@ -13,7 +13,13 @@ explore/out/*.npy
 
 # claim texts for GPU runs; committed only on the gpu-data branch
 experiment-big-data/gpu_data/
-outputs/
+outputs/*
+!outputs/split.json
+!outputs/synthetic/
+outputs/synthetic/*
+!outputs/synthetic/paraphrase.jsonl
+!outputs/synthetic/element_reuse.jsonl
+!outputs/synthetic/combination.jsonl
 
 # secrets
 .env
