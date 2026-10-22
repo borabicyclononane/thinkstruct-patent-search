@@ -4,6 +4,9 @@ Swappable pieces (all plain functions passed to Index):
   score(q, K) -> scores        vectorised similarity of one query to a key matrix (default cosine)
   aggregate(child_keys) -> key how an internal node's key is built from its children (default mean)
   project(X) -> X'             applied to leaf embeddings AND queries before keys are aggregated,
+  project_query(X) -> X'       optional separate map for queries (two-tower models); defaults to `project`.
+                               May return one vector per tree level, shape (n, len(LEVELS), d): each node is
+                               then scored with its level's query vector (per-level query models)
                                e.g. a learned linear map / small MLP (default identity)
   combine(parent, child)       how a child's routing score uses its parent's (default: child's own score;
                                e.g. `lambda p, c: p + c` for cumulative path scores)
@@ -54,9 +57,10 @@ class Result:
 
 class Index:
     def __init__(self, tree: Tree, leaf_vecs: np.ndarray, score=cosine, aggregate=mean, project=identity,
-                 combine=own_score):
+                 combine=own_score, project_query=None):
         self.tree, self.leaf_vecs = tree, leaf_vecs  # leaf_vecs rows follow tree.leaves
         self.score, self.aggregate, self.project, self.combine = score, aggregate, project, combine
+        self.project_query = project_query or project
         self.rebuild_keys()
 
     def rebuild_keys(self) -> None:
@@ -85,6 +89,15 @@ class Index:
                 valid[self.tree.children[n]] = False
         return valid
 
+    def node_scores(self, q: np.ndarray, nodes: np.ndarray) -> np.ndarray:
+        """Score `nodes`; a 2-D `q` holds one query vector per tree level."""
+        if q.ndim == 1:
+            return self.score(q, self.K[nodes])
+        out, lvl = np.empty(len(nodes)), self.tree.level[nodes]
+        for l in np.unique(lvl):
+            out[lvl == l] = self.score(q[l], self.K[nodes[lvl == l]])
+        return out
+
     def has_candidate(self, nodes: np.ndarray, cand: np.ndarray) -> np.ndarray:
         """For each node: does the sorted candidate-position array hit the node's range [start, end)?"""
         return np.searchsorted(cand, self.tree.start[nodes]) < np.searchsorted(cand, self.tree.end[nodes])
@@ -108,7 +121,8 @@ class Index:
                     cand: np.ndarray | None = None) -> Result:
         """Score every independent claim; top-k claims and top-k patents (by best claim).
         `cand` (sorted patent positions) pre-filters: only the candidates' claims are gathered and scored."""
-        q = l2n(self.project(query[None]))[0]
+        q = l2n(self.project_query(query[None]))[0]
+        q = q[CLAIM] if q.ndim == 2 else q
         if valid is None and cand is None:
             return self._result(self.tree.leaves, self.score(q, self.leaf_K), k)
         if cand is None:
@@ -132,7 +146,7 @@ class Index:
         positions passing keyword/title filters) prunes the tree: only children whose range holds a
         candidate are scored.
         """
-        q = l2n(self.project(query[None]))[0]
+        q = l2n(self.project_query(query[None]))[0]
         beam = np.atleast_1d(np.asarray(start_node, dtype=np.int64))
         beam_scores = np.zeros(len(beam))
         while True:
@@ -146,11 +160,11 @@ class Index:
                 ok = self.has_candidate(kids, cand)
                 kids, parent_scores = kids[ok], parent_scores[ok]
             nodes = np.concatenate([beam[done], kids])
-            node_scores = np.concatenate([beam_scores[done], self.combine(parent_scores, self.score(q, self.K[kids]))])
+            node_scores = np.concatenate([beam_scores[done], self.combine(parent_scores, self.node_scores(q, kids))])
             keep = topk(node_scores, B)
             beam, beam_scores = nodes[keep], node_scores[keep]
         claims = np.concatenate([self.children(p, valid) for p in beam]) if len(beam) else np.array([], dtype=np.int64)
-        return self._result(claims, self.score(q, self.K[claims]), None)
+        return self._result(claims, self.node_scores(q, claims), None)
 
 
 def build_index(patents: list[dict], embedder, progress: bool = False, **kwargs) -> tuple[Index, dict]:

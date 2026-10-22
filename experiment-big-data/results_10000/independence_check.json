@@ -1,0 +1,41 @@
+{
+ "sample": 10000,
+ "patents_checked": 200,
+ "scrape_errors": {},
+ "claims_compared": 3394,
+ "claims_only_in_dataset": 23,
+ "claims_only_on_google": 24,
+ "independent_by_text_rule": 453,
+ "vs_scraper": {
+  "agreement": 1.0,
+  "text_rule_independent_but_ref_dependent": 0,
+  "text_rule_dependent_but_ref_independent": 0,
+  "patents_with_identical_independent_sets": 199
+ },
+ "vs_claim_ref": {
+  "agreement": 1.0,
+  "text_rule_independent_but_ref_dependent": 0,
+  "text_rule_dependent_but_ref_independent": 0,
+  "patents_with_identical_independent_sets": 199
+ },
+ "vs_google": {
+  "agreement": 1.0,
+  "text_rule_independent_but_ref_dependent": 0,
+  "text_rule_dependent_but_ref_independent": 0,
+  "patents_with_identical_independent_sets": 199
+ },
+ "end_to_end": {
+  "google_independent_claims": 456,
+  "found_in_sample": 456,
+  "recall": 1.0,
+  "sample_claims": 457,
+  "sample_claims_not_independent_on_google": 1,
+  "text_similarity": {
+   "min": 0.8974,
+   "p1": 0.9853,
+   "median": 1.0,
+   "share_identical": 0.9474,
+   "share_below_0.95": 0.0022
+  }
+ }
+}

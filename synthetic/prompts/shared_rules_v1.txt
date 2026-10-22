@@ -1,0 +1,6 @@
+Formatting rules for every claim you write:
+- Write only the BODY of a patent claim: no preamble like "A ... comprising:",
+  no claim number, no reference numerals (e.g. "unit 100"), no figure references.
+- Use patent-claim style: elements separated by semicolons, precise technical language.
+- Do not reuse the patent title's wording.
+Return JSON only, no other text.

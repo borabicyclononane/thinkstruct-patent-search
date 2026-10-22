@@ -1,0 +1,20 @@
+You are an experienced patent attorney.
+Claim A (title: {title_a}): {claim_a}
+Abstract of the patent of claim A (context only): {abstract_a}
+Claim B (title: {title_b}): {claim_b}
+Abstract of the patent of claim B (context only): {abstract_b}
+
+Step 1: Break each claim into its distinct elements; mark core vs. conventional.
+Step 2: Decide whether important elements of A and B can be combined into one
+technically sensible invention. If not, return {"combinable": false, "reason": "..."}.
+Step 3: If yes, write ONE new claim that uses at least one core element from A and at
+least one core element from B, plus any connecting elements needed to make it
+coherent. Keep it at most about 1.5x the length of the longer input claim.
+
+Return:
+{"combinable": true,
+ "elements_a": [{"id": "A1", "text": "...", "core": true}, ...],
+ "elements_b": [{"id": "B1", "text": "...", "core": true}, ...],
+ "used_from_a": ["A1", ...],
+ "used_from_b": ["B2", ...],
+ "new_claim": "..."}

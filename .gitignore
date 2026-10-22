@@ -14,3 +14,10 @@ explore/out/*.npy
 # claim texts for GPU runs; committed only on the gpu-data branch
 experiment-big-data/gpu_data/
 outputs/
+
+# secrets
+.env
+
+# model checkpoints (retrain: training/train_towers.py, ~5 min on CPU) and the small test bundle
+training/runs/*/towers.pt
+training/bundles/small_100.npz

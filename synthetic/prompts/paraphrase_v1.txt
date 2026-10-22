@@ -1,0 +1,11 @@
+You are an experienced patent attorney.
+Patent title (context only): {title}
+Patent abstract (context only): {abstract}
+Claim (its preamble may be missing): {claim}
+
+Rewrite this claim so it has exactly the same scope and the same elements, but uses
+different terminology for every element where a reasonable alternative exists, and a
+different sentence structure. Do not copy any phrase longer than 4 words. Keep a
+similar length.
+
+Return: {"paraphrase": "..."}

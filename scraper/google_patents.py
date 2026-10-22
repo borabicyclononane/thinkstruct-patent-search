@@ -29,11 +29,12 @@ def fetch_html(pub: str, cache_dir: str, retries: int = 4) -> str:
     """Return the page for publication number `pub` (e.g. US20240051333A1), cached on disk."""
     path = os.path.join(cache_dir, f"{pub}.html")
     if os.path.exists(path):
-        return open(path).read()
+        return open(path, encoding="utf-8").read()
     for attempt in range(retries):
         r = requests.get(URL.format(pub=pub), headers=HEADERS, timeout=30)
         if r.status_code == 200:
-            open(path, "w").write(r.text)
+            r.encoding = "utf-8"  # the pages are UTF-8, but without a charset header requests decodes them as Latin-1
+            open(path, "w", encoding="utf-8").write(r.text)
             return r.text
         if r.status_code == 404:
             break

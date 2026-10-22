@@ -1,0 +1,33 @@
+You are an experienced patent attorney.
+Claim A (title: {title_a}): {claim_a}
+Abstract of the patent of claim A (context only): {abstract_a}
+Claim B (title: {title_b}): {claim_b}
+Abstract of the patent of claim B (context only): {abstract_b}
+
+Step 1: Break each claim into its distinct elements; mark core vs. conventional.
+Step 2: Pick only ONE or TWO key parts of claim A and ONE or TWO key parts of claim B.
+A key part can be a mechanism, a structure, a method step, or the technical domain or
+application the claim is aimed at. You do not need all of the core elements of A or of
+B. One or two key parts from each are enough, as long as the new claim overlaps each
+original claim in substance on those parts: the kind of overlap that would make the
+owner of that claim argue the new claim practices their idea.
+Step 3: Think about the content of those parts: what each one does and what problem it
+solves. Then come up with one new invention in which they genuinely work together, and
+write ONE new claim for it, the way a single patent attorney would draft it for a client
+who walked in with this invention: one cohesive claim in which every element has a
+purpose and the parts taken from A and from B interact.
+- Do not copy the rest of either claim, and do not list A's elements followed by B's.
+- Always write a claim. If the two claims seem unrelated, find the creative connection,
+  for example by applying a mechanism of one to the domain of the other.
+- The new claim may be much longer or much shorter than the input claims.
+Step 4: Say how the new claim is balanced: "mostly_a" if it is mainly built on claim A's
+idea with a part of B added, "mostly_b" if the reverse, "equal" if both contribute about
+equally.
+
+Return:
+{"elements_a": [{"id": "A1", "text": "...", "core": true}, ...],
+ "elements_b": [{"id": "B1", "text": "...", "core": true}, ...],
+ "used_from_a": ["A1"],
+ "used_from_b": ["B2"],
+ "mix": "mostly_a" | "mostly_b" | "equal",
+ "new_claim": "..."}

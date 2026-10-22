@@ -1,0 +1,9 @@
+Formatting rules for every claim you write:
+- Write a complete independent patent claim in proper form: a preamble naming the
+  invention (e.g. "A wheel assembly" or "A method of ..."), a transitional phrase such
+  as "comprising:", then the elements separated by semicolons, with "and" before the
+  last element, ending in a single period.
+- No claim number, no reference numerals (e.g. "unit 100"), no figure references.
+- Use precise technical language.
+- Do not reuse the patent title's wording.
+Return JSON only, no other text.

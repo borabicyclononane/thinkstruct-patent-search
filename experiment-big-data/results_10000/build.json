@@ -5,9 +5,9 @@
  "n_index_claims": 22036,
  "n_tree_nodes": 40582,
  "build_seconds": {
-  "tree_s": 0.05176320800092071,
-  "embed_s": 0.0490347919985652,
-  "keys_s": 0.20775508299993817
+  "tree_s": 0.05156941700261086,
+  "embed_s": 0.040861000001314096,
+  "keys_s": 0.21360479098802898
  },
  "sample_report": {
   "batch files read": 17,

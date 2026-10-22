@@ -1,0 +1,28 @@
+You are an experienced patent attorney.
+Claim A (title: {title_a}): {claim_a}
+Abstract of the patent of claim A (context only): {abstract_a}
+Claim B (title: {title_b}): {claim_b}
+Abstract of the patent of claim B (context only): {abstract_b}
+
+Step 1: Break each claim into its distinct elements; mark core vs. conventional.
+Step 2: Write ONE new claim that combines A and B. Always write a claim; never decline.
+- If important elements of A and B fit together into one technically sensible invention,
+  combine at least one core element from A with at least one core element from B, plus any
+  connecting elements needed to make it coherent.
+- If they do not fit together naturally, combine them the way an inventor reusing ideas
+  would: take an element of one claim and an element of the other (for example, the
+  technical domain or application of one with a mechanism, structure or method of the
+  other) and build a coherent new claim around that pairing.
+The new claim must use at least one element from A and at least one element from B. It may
+be much longer or much shorter than the input claims.
+Step 3: Say how the new claim is balanced: "mostly_a" if it is mainly claim A's invention
+with an element of B added, "mostly_b" if the reverse, "equal" if both contribute about
+equally.
+
+Return:
+{"elements_a": [{"id": "A1", "text": "...", "core": true}, ...],
+ "elements_b": [{"id": "B1", "text": "...", "core": true}, ...],
+ "used_from_a": ["A1", ...],
+ "used_from_b": ["B2", ...],
+ "mix": "mostly_a" | "mostly_b" | "equal",
+ "new_claim": "..."}

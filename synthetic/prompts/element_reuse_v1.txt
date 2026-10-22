@@ -1,0 +1,18 @@
+You are an experienced patent attorney.
+Patent title (context only): {title}
+Patent abstract (context only): {abstract}
+Claim (its preamble may be missing): {claim}
+
+Step 1: Break the claim into its distinct elements (components, relationships,
+functions). Mark which elements are core (inventive) vs. conventional.
+Step 2: Choose ONE core element.
+Step 3: Write a NEW claim for a different invention that includes the chosen element
+in substance (the new claim must clearly read on that element, possibly in different
+words), while its other elements are new and may come from a different technical
+area or application. The new claim should NOT reproduce the other elements of the
+original claim.
+
+Return:
+{"elements": [{"id": "E1", "text": "...", "core": true}, ...],
+ "chosen_element": "E2",
+ "new_claim": "..."}

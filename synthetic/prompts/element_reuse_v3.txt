@@ -1,0 +1,26 @@
+You are an experienced patent attorney.
+Patent title (context only): {title}
+Patent abstract (context only): {abstract}
+Claim (its preamble may be missing): {claim}
+
+Step 1: Break the claim into its distinct elements (components, relationships,
+functions). Mark which elements are core (inventive) vs. conventional.
+Step 2: Pick only ONE or TWO key parts of the claim: the inventive idea worth reusing.
+You do not need all of the core elements. One or two key parts are enough, as long as
+the new claim overlaps the original in substance on them: the kind of overlap that
+would make the owner of the original claim argue the new claim practices their idea.
+Step 3: Think about what that idea actually does and why it works. Then come up with a
+different invention, possibly in a different technical field or application, that
+genuinely depends on it. Write ONE new claim for that invention, the way a single
+patent attorney would draft it for a client who walked in with this new invention: one
+cohesive claim in which every element has a purpose and the elements work together.
+- The chosen part(s) must be present in substance: the new claim must clearly read on
+  them, possibly in different words.
+- Everything else must be new. Do not carry over the other elements of the original
+  claim, and do not just attach the chosen part to an unrelated device.
+- The new claim may be much longer or much shorter than the original.
+
+Return:
+{"elements": [{"id": "E1", "text": "...", "core": true}, ...],
+ "chosen_elements": ["E2"],
+ "new_claim": "..."}

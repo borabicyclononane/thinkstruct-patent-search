@@ -65,8 +65,8 @@ def same(a, b, tol=1e-6) -> bool:
             and np.allclose(a.claim_scores, b.claim_scores, atol=tol, rtol=0))
 
 
-def run_hybrid(index, queries: np.ndarray, B: int = 10, k: int = 10, repeats: int = 3, scenarios=SCENARIOS):
-    """-> (timing table, check summary)."""
+def run_hybrid(index, queries: np.ndarray, B: int = 10, k: int = 10, repeats: int = 3, scenarios=SCENARIOS, extra_Bs=(1, 5)):
+    """-> (timing table, check summary). `extra_Bs`: beam widths timed in addition to B (methods 'beam B=<b>')."""
     text = TextIndex(index)
     tree = index.tree
 
@@ -84,6 +84,8 @@ def run_hybrid(index, queries: np.ndarray, B: int = 10, k: int = 10, repeats: in
              **latency(lambda q: index.flat_search(q, k))},
             {"scenario": "no filter", "method": "beam", "n_candidates": len(tree.order),
              **latency(lambda q: index.beam_search(q, B))}]
+    rows += [{"scenario": "no filter", "method": f"beam B={b}", "n_candidates": len(tree.order),
+              **latency(lambda q, b=b: index.beam_search(q, b))} for b in extra_Bs]
     checks = []
     for name, f in scenarios:
         _, n = hybrid_search(index, text, queries[0], f, k, B)
@@ -94,6 +96,8 @@ def run_hybrid(index, queries: np.ndarray, B: int = 10, k: int = 10, repeats: in
                   **latency(lambda q: hybrid_search(index, text, q, f, k, B, flat=True))},
                  {"scenario": name, "method": "beam pruned", "n_candidates": n,
                   **latency(lambda q: hybrid_search(index, text, q, f, k, B))}]
+        rows += [{"scenario": name, "method": f"beam pruned B={b}", "n_candidates": n,
+                  **latency(lambda q, b=b: hybrid_search(index, text, q, f, k, b))} for b in extra_Bs]
         bad = mismatch = overlap = 0
         for q in queries:
             pre, _ = hybrid_search(index, text, q, f, None, flat=True)
