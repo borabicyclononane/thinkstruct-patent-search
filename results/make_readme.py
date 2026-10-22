@@ -26,21 +26,21 @@ speed = []
 for B in [1, 5, 10, 100]:
     r = []
     for n in d:
-        x = d[n].set_index(["B", "search"])
+        x = d[n].drop_duplicates(["B", "search"]).set_index(["B", "search"])
         fl, be = x.loc[(B, "flat"), "ms_median"], x.loc[(B, "beam"), "ms_median"]
         r += [f3(fl), f3(be), f"{fl / be:.1f}x"]
     speed.append([B] + r)
 speed_t = table(["B", "default: flat", "default: beam", "flat ÷ beam", "10^4: flat", "10^4: beam", "flat ÷ beam"], speed)
 
-M = [("agree_subclass", "agree subclass"), ("agree_main_group", "agree main group"), ("knn_subclass", "kNN subclass"),
-     ("knn_main_group", "kNN main group"), ("ndcg", "nDCG")]
-def acc(n):
-    x = d[n].set_index(["B", "search"]); rows = []
-    for B in [1, 5, 10, 100]:
-        rows.append([B, "flat"] + [f3(x.loc[(B, "flat"), m]) for m, _ in M])
-        rows.append(["", "beam"] + [f3(x.loc[(B, "beam"), m]) for m, _ in M])
-        rows.append(["", "beam − flat"] + [f"{x.loc[(B, 'beam'), m] - x.loc[(B, 'flat'), m]:+.3f}" for m, _ in M])
-    return table(["B", "search"] + [h for _, h in M], rows, left=2)
+x = d["default"].set_index(["B", "search", "dataset"])
+acc = []
+for B in [1, 5, 10, 100]:
+    for sch in ("flat", "beam"):
+        y = x.loc[(B, sch, "all")]
+        sig = "—" if sch == "flat" else f"+{int(y.vs_flat_better)} / −{int(y.vs_flat_worse)}, {pval(y.vs_flat_p)}"
+        acc.append([B if sch == "flat" else "", sch] + [f3(x.loc[(B, sch, ds), "source_returned"])
+                    for ds in ("paraphrase", "element_reuse", "combination", "all")] + [sig])
+acc_t = table(["B", "search", "paraphrase", "element reuse", "combination", "all", "all: beam vs flat"], acc, left=2)
 
 def hybrid(tpath):
     t = pd.read_csv(tpath).pivot_table(index=["scenario", "n_candidates"], columns="method", values="ms_median", sort=False)
@@ -88,32 +88,23 @@ make readme  # this file
 
 ## Part 1: is beam search better than flat search?
 
-**Queries.** Each query is a held-out patent's first independent claim.
-- **Default dataset:** 640 vehicle patents, 5-fold, so every patent is a query once against the other 512 patents.
-- **10^4 sample:** 1,000 patents from the large dataset, each queried against the other 9,000 (all CPC sections).
+**What is compared.** Beam search with width B returns all claims of B patents. Flat search scores every claim and keeps all claims of its top B patents.
 
-**What is compared.** Beam search with width B returns B patents. Flat search scores every claim and keeps its top B patents.
+**Accuracy** (default dataset only). The queries are the 357 Part 3 test-split synthetic queries (119 per task), searched against one index over all 640 patents. The metric is the share of queries whose source claim is among the returned claims; a combination counts only if **both** of its source claims come back. "beam vs flat" gives the queries only beam finds and the queries only flat finds, with an exact two-sided sign test. Beam B=5 equals the raw 768-d row of Part 3.
 
-**Accuracy metrics,** computed on those B patents:
-- **agree (subclass / main group):** share of the B patents with the query's CPC code down to that level.
-- **kNN (subclass / main group):** the B patents' majority label at that level equals the query's.
-- **nDCG:** nDCG@B, where a patent's relevance is the depth of the CPC prefix it shares with the query.
+**Speed.**
+- **Default dataset:** the same 357 queries.
+- **10^4 sample:** 1,000 held-out patents' first independent claims, searched against the other 9,000 patents (all CPC sections). Accuracy isn't measured here, because there are no synthetic queries for this sample.
+
+### Accuracy: default dataset
+
+{acc_t}
 
 ### Speed (ms per query)
 
 "flat ÷ beam" above 1 means beam search is faster.
 
 {speed_t}
-
-### Accuracy: default dataset
-
-{acc("default")}
-
-### Accuracy: 10^4 sample
-
-{acc("sample10000")}
-
-Section- and class-level metrics are in the CSVs. They are always 1.000 on the default dataset, because every patent there is B60.
 
 ## Part 1b: hybrid search speed
 

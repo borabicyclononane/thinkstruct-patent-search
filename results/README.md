@@ -13,16 +13,26 @@ make readme  # this file
 
 ## Part 1: is beam search better than flat search?
 
-**Queries.** Each query is a held-out patent's first independent claim.
-- **Default dataset:** 640 vehicle patents, 5-fold, so every patent is a query once against the other 512 patents.
-- **10^4 sample:** 1,000 patents from the large dataset, each queried against the other 9,000 (all CPC sections).
+**What is compared.** Beam search with width B returns all claims of B patents. Flat search scores every claim and keeps all claims of its top B patents.
 
-**What is compared.** Beam search with width B returns B patents. Flat search scores every claim and keeps its top B patents.
+**Accuracy** (default dataset only). The queries are the 357 Part 3 test-split synthetic queries (119 per task), searched against one index over all 640 patents. The metric is the share of queries whose source claim is among the returned claims; a combination counts only if **both** of its source claims come back. "beam vs flat" gives the queries only beam finds and the queries only flat finds, with an exact two-sided sign test. Beam B=5 equals the raw 768-d row of Part 3.
 
-**Accuracy metrics,** computed on those B patents:
-- **agree (subclass / main group):** share of the B patents with the query's CPC code down to that level.
-- **kNN (subclass / main group):** the B patents' majority label at that level equals the query's.
-- **nDCG:** nDCG@B, where a patent's relevance is the depth of the CPC prefix it shares with the query.
+**Speed.**
+- **Default dataset:** the same 357 queries.
+- **10^4 sample:** 1,000 held-out patents' first independent claims, searched against the other 9,000 patents (all CPC sections). Accuracy isn't measured here, because there are no synthetic queries for this sample.
+
+### Accuracy: default dataset
+
+| B   | search | paraphrase | element reuse | combination |   all |  all: beam vs flat |
+| --- | ------ | ---------: | ------------: | ----------: | ----: | -----------------: |
+| 1   | flat   |      0.437 |         0.244 |       0.000 | 0.227 |                  — |
+|     | beam   |      0.244 |         0.084 |       0.000 | 0.109 |  +8 / −50, p<0.001 |
+| 5   | flat   |      0.731 |         0.445 |       0.361 | 0.513 |                  — |
+|     | beam   |      0.622 |         0.311 |       0.227 | 0.387 | +10 / −55, p<0.001 |
+| 10  | flat   |      0.782 |         0.529 |       0.429 | 0.580 |                  — |
+|     | beam   |      0.723 |         0.454 |       0.328 | 0.501 | +10 / −38, p<0.001 |
+| 100 | flat   |      0.975 |         0.866 |       0.824 | 0.888 |                  — |
+|     | beam   |      0.966 |         0.874 |       0.798 | 0.880 |   +2 / −5, p=0.453 |
 
 ### Speed (ms per query)
 
@@ -30,46 +40,10 @@ make readme  # this file
 
 | B   | default: flat | default: beam | flat ÷ beam | 10^4: flat | 10^4: beam | flat ÷ beam |
 | --- | ------------: | ------------: | ----------: | ---------: | ---------: | ----------: |
-| 1   |         0.026 |         0.065 |        0.4x |      1.054 |      0.071 |       14.9x |
-| 5   |         0.038 |         0.087 |        0.4x |      1.206 |      0.133 |        9.0x |
-| 10  |         0.046 |         0.096 |        0.5x |      1.265 |      0.200 |        6.3x |
-| 100 |         0.109 |         0.245 |        0.4x |      1.345 |      1.227 |        1.1x |
-
-### Accuracy: default dataset
-
-| B   | search      | agree subclass | agree main group | kNN subclass | kNN main group |   nDCG |
-| --- | ----------- | -------------: | ---------------: | -----------: | -------------: | -----: |
-| 1   | flat        |          0.941 |            0.620 |        0.941 |          0.620 |  0.805 |
-|     | beam        |          0.914 |            0.569 |        0.914 |          0.569 |  0.780 |
-|     | beam − flat |         -0.027 |           -0.052 |       -0.027 |         -0.052 | -0.024 |
-| 5   | flat        |          0.927 |            0.506 |        0.942 |          0.617 |  0.789 |
-|     | beam        |          0.945 |            0.560 |        0.950 |          0.634 |  0.806 |
-|     | beam − flat |         +0.018 |           +0.054 |       +0.008 |         +0.017 | +0.017 |
-| 10  | flat        |          0.911 |            0.448 |        0.945 |          0.617 |  0.789 |
-|     | beam        |          0.929 |            0.480 |        0.942 |          0.616 |  0.800 |
-|     | beam − flat |         +0.018 |           +0.032 |       -0.003 |         -0.002 | +0.011 |
-| 100 | flat        |          0.832 |            0.203 |        0.903 |          0.384 |  0.887 |
-|     | beam        |          0.834 |            0.203 |        0.903 |          0.388 |  0.888 |
-|     | beam − flat |         +0.003 |           +0.000 |       +0.000 |         +0.003 | +0.001 |
-
-### Accuracy: 10^4 sample
-
-| B   | search      | agree subclass | agree main group | kNN subclass | kNN main group |   nDCG |
-| --- | ----------- | -------------: | ---------------: | -----------: | -------------: | -----: |
-| 1   | flat        |          0.371 |            0.197 |        0.371 |          0.197 |  0.402 |
-|     | beam        |          0.178 |            0.075 |        0.178 |          0.075 |  0.242 |
-|     | beam − flat |         -0.193 |           -0.122 |       -0.193 |         -0.122 | -0.160 |
-| 5   | flat        |          0.334 |            0.156 |        0.431 |          0.226 |  0.399 |
-|     | beam        |          0.362 |            0.173 |        0.404 |          0.216 |  0.434 |
-|     | beam − flat |         +0.028 |           +0.017 |       -0.027 |         -0.010 | +0.035 |
-| 10  | flat        |          0.297 |            0.132 |        0.453 |          0.240 |  0.387 |
-|     | beam        |          0.346 |            0.156 |        0.428 |          0.227 |  0.437 |
-|     | beam − flat |         +0.049 |           +0.025 |       -0.025 |         -0.013 | +0.049 |
-| 100 | flat        |          0.181 |            0.059 |        0.352 |          0.200 |  0.361 |
-|     | beam        |          0.197 |            0.065 |        0.344 |          0.191 |  0.383 |
-|     | beam − flat |         +0.016 |           +0.006 |       -0.008 |         -0.009 | +0.022 |
-
-Section- and class-level metrics are in the CSVs. They are always 1.000 on the default dataset, because every patent there is B60.
+| 1   |         0.029 |         0.065 |        0.4x |      1.045 |      0.071 |       14.7x |
+| 5   |         0.043 |         0.094 |        0.5x |      1.209 |      0.127 |        9.5x |
+| 10  |         0.048 |         0.100 |        0.5x |      1.300 |      0.170 |        7.6x |
+| 100 |         0.117 |         0.278 |        0.4x |      1.339 |      1.172 |        1.1x |
 
 ## Part 1b: hybrid search speed
 
@@ -94,37 +68,37 @@ The "no filter" row shows plain flat search and plain beam search.
 
 | filter                    | candidate patents | flat post-filter | flat pre-filter | beam B=1 | beam B=5 | beam B=10 |
 | ------------------------- | ----------------: | ---------------: | --------------: | -------: | -------: | --------: |
-| no filter                 |               640 |            0.052 |                 |    0.066 |    0.087 |     0.099 |
-| CPC subclass B60C         |               318 |            0.054 |           0.130 |    0.046 |    0.068 |     0.083 |
-| CPC subgroup B60B 27/00   |                34 |            0.046 |           0.041 |    0.031 |    0.036 |     0.038 |
-| CPC B60B 33 or B60D       |                59 |            0.049 |           0.049 |    0.038 |    0.048 |     0.061 |
-| keyword: tire             |               318 |            0.052 |           0.130 |    0.082 |    0.103 |     0.117 |
-| keyword: hub              |               138 |            0.051 |           0.064 |    0.079 |    0.091 |     0.110 |
-| keyword: non-pneumatic    |                32 |            0.045 |           0.043 |    0.074 |    0.088 |     0.093 |
+| no filter                 |               640 |            0.052 |                 |    0.066 |    0.086 |     0.097 |
+| CPC subclass B60C         |               318 |            0.054 |           0.124 |    0.045 |    0.061 |     0.072 |
+| CPC subgroup B60B 27/00   |                34 |            0.044 |           0.042 |    0.031 |    0.036 |     0.038 |
+| CPC B60B 33 or B60D       |                59 |            0.047 |           0.049 |    0.039 |    0.049 |     0.060 |
+| keyword: tire             |               318 |            0.053 |           0.087 |    0.082 |    0.095 |     0.107 |
+| keyword: hub              |               138 |            0.050 |           0.063 |    0.077 |    0.091 |     0.102 |
+| keyword: non-pneumatic    |                32 |            0.045 |           0.043 |    0.075 |    0.090 |     0.094 |
 | keyword: hitch            |                 8 |            0.037 |           0.026 |    0.074 |    0.077 |     0.077 |
-| tire AND pressure         |                28 |            0.057 |           0.054 |    0.088 |    0.099 |     0.104 |
-| stud OR hitch             |                12 |            0.041 |           0.031 |    0.077 |    0.088 |     0.090 |
-| title = 'pneumatic tire'  |                33 |            0.036 |           0.030 |    0.073 |    0.083 |     0.088 |
-| B60C 11 + tread AND noise |                 3 |            0.050 |           0.038 |    0.054 |    0.056 |     0.057 |
+| tire AND pressure         |                28 |            0.057 |           0.054 |    0.087 |    0.099 |     0.105 |
+| stud OR hitch             |                12 |            0.042 |           0.031 |    0.078 |    0.086 |     0.091 |
+| title = 'pneumatic tire'  |                33 |            0.036 |           0.029 |    0.072 |    0.082 |     0.087 |
+| B60C 11 + tread AND noise |                 3 |            0.051 |           0.038 |    0.055 |    0.057 |     0.057 |
 
 ### 10^4 sample (9,000 patents)
 
 | filter                    | candidate patents | flat post-filter | flat pre-filter | beam B=1 | beam B=5 | beam B=10 |
 | ------------------------- | ----------------: | ---------------: | --------------: | -------: | -------: | --------: |
-| no filter                 |              9000 |            1.243 |                 |    0.073 |    0.162 |     0.228 |
-| CPC section H             |              2465 |            1.214 |           2.277 |    0.064 |    0.102 |     0.137 |
-| CPC subclass G06F         |               804 |            1.145 |           0.495 |    0.060 |    0.112 |     0.101 |
-| CPC main group G06F 3     |               206 |            1.114 |           0.181 |    0.048 |    0.066 |     0.076 |
-| CPC subgroup G02B 27/0172 |                12 |            1.096 |           0.028 |    0.027 |    0.030 |     0.031 |
-| CPC A61K or C07D          |               413 |            1.117 |           0.248 |    0.057 |    0.099 |     0.124 |
-| keyword: method           |              4694 |            1.370 |           4.730 |    0.098 |    0.151 |     0.193 |
-| keyword: vehicle          |               485 |            1.118 |           0.249 |    0.084 |    0.114 |     0.133 |
-| keyword: antibody         |                67 |            1.098 |           0.057 |    0.079 |    0.096 |     0.106 |
-| keyword: crispr           |                 5 |            1.093 |           0.029 |    0.075 |    0.084 |     0.084 |
-| wireless AND battery      |                 9 |            1.166 |           0.046 |    0.094 |    0.107 |     0.111 |
-| lidar OR radar            |                34 |            1.114 |           0.055 |    0.084 |    0.102 |     0.112 |
-| title = 'display device'  |                24 |            1.100 |           0.038 |    0.074 |    0.091 |     0.098 |
-| G06F + neural AND network |                 4 |            1.165 |           0.053 |    0.072 |    0.077 |     0.077 |
+| no filter                 |              9000 |            1.212 |                 |    0.071 |    0.123 |     0.173 |
+| CPC section H             |              2465 |            1.127 |           1.964 |    0.064 |    0.106 |     0.142 |
+| CPC subclass G06F         |               804 |            1.112 |           0.431 |    0.049 |    0.075 |     0.101 |
+| CPC main group G06F 3     |               206 |            1.085 |           0.154 |    0.047 |    0.054 |     0.060 |
+| CPC subgroup G02B 27/0172 |                12 |            1.070 |           0.028 |    0.028 |    0.030 |     0.032 |
+| CPC A61K or C07D          |               413 |            1.091 |           0.236 |    0.054 |    0.076 |     0.120 |
+| keyword: method           |              4694 |            1.324 |           4.416 |    0.095 |    0.143 |     0.179 |
+| keyword: vehicle          |               485 |            1.098 |           0.257 |    0.083 |    0.120 |     0.133 |
+| keyword: antibody         |                67 |            1.083 |           0.083 |    0.079 |    0.094 |     0.103 |
+| keyword: crispr           |                 5 |            1.072 |           0.028 |    0.074 |    0.082 |     0.082 |
+| wireless AND battery      |                 9 |            1.093 |           0.046 |    0.093 |    0.107 |     0.111 |
+| lidar OR radar            |                34 |            1.098 |           0.071 |    0.085 |    0.105 |     0.136 |
+| title = 'display device'  |                24 |            1.083 |           0.042 |    0.072 |    0.090 |     0.097 |
+| G06F + neural AND network |                 4 |            1.100 |           0.051 |    0.073 |    0.077 |     0.077 |
 
 ## Part 3: training and evaluation
 

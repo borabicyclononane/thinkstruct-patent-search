@@ -20,8 +20,8 @@ The task data isn't in git. Put it here:
 ## Run
 
 ```
-make part1    # search index, beam vs flat, hybrid search        ~2 min
-make large    # the same on a 10^4 sample of the large dataset   ~20 min (mostly embedding all the samples)
+make part1    # beam vs flat, hybrid search                      ~1 min
+make large    # speed on a 10^4 sample of the large dataset      ~20 min (mostly embedding all the samples)
 make part3    # embed synthetic queries, train towers, evaluate  ~6 min
 make readme   # rebuild the tables in results/README.md
 make viewer   # explore everything at http://localhost:8501

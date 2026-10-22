@@ -1,13 +1,11 @@
-"""Run both search pipelines (beam/flat eval + hybrid search) on a subsample of the large dataset.
+"""Embed a subsample of the large dataset and time hybrid search on it.
 
   .venv/bin/python3.14 experiment-big-data/sample.py --n 100000     # once: zip -> data/large/sample_100000.jsonl
   .venv/bin/python3.14 experiment-big-data/run.py --n 100000
 
-Differences from `python -m search eval` / `hybrid` (both too slow to run unchanged at this size):
-  eval    one held-out split instead of k-fold: `--queries` random patents are queries (their first
-          independent claim), the index is built from all the others
-  hybrid  same index and the first `--hybrid-queries` of those queries; filter scenarios for a corpus
-          spanning all CPC sections
+Differences from `python -m search hybrid`: one held-out split (`--queries` random patents are queries, their first
+independent claim; the index is built from all the others), the first `--hybrid-queries` of those queries, and filter
+scenarios for a corpus spanning all CPC sections. Flat vs beam timing on the same split: results/compare_part1.py.
 Embeddings are computed in chunks and cached (data/index/embeddings_large.npz), so an interrupted run resumes.
 Writes experiment-big-data/results_<n>/.
 """
@@ -23,11 +21,10 @@ import pandas as pd
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from sample import load_sample  # noqa: E402
 from search.embed import Embedder  # noqa: E402
-from search.evaluate import BS, KS, _eval_fold, _timing  # noqa: E402
 from search.filters import Filter  # noqa: E402
 from search.hybrid_eval import run_hybrid  # noqa: E402
 from search.index import build_index  # noqa: E402
-from search.plots import hybrid_latency, make_plots  # noqa: E402
+from search.plots import hybrid_latency  # noqa: E402
 
 CACHE = "data/index/embeddings_large.npz"
 SCENARIOS = [
@@ -48,7 +45,7 @@ SCENARIOS = [
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--n", type=int, default=100_000, help="sample size (run sample.py --n first)")
-ap.add_argument("--queries", type=int, default=1000, help="held-out query patents for the eval")
+ap.add_argument("--queries", type=int, default=1000, help="held-out query patents")
 ap.add_argument("--hybrid-queries", type=int, default=300)
 ap.add_argument("--chunk", type=int, default=20_000, help="claims embedded between cache saves")
 ap.add_argument("--seed", type=int, default=0)
@@ -79,26 +76,9 @@ train = [p for p, q in zip(patents, is_query) if not q]
 index, build_t = build_index(train, embedder)
 index.tree.print_report()
 print("build:", {k: f"{v:.2f} s" for k, v in build_t.items()})
-query_texts = [p["claims"][0]["text"] for p in test]
-queries = embedder.embed(query_texts)
+queries = embedder.embed([p["claims"][0]["text"] for p in test])
 
-# 3. Part 1 eval: CPC agreement / nDCG / kNN, beam vs flat, plus timing
-t0 = time.perf_counter()
-per_query = pd.DataFrame(_eval_fold(index, train, test, queries, BS, KS, 20, rng, 0))
-per_query["B"] = per_query["B"].astype("Int64")
-metrics = (per_query.drop(columns=["query", "fold"]).groupby(["method", "B", "k"], dropna=False, sort=False)
-           .mean().reset_index())
-timing = _timing(index, build_t, embedder, query_texts, queries, BS, 3)
-print(f"eval: {time.perf_counter() - t0:.0f} s")
-per_query.to_csv(os.path.join(out, "eval_per_query.csv"), index=False)
-metrics.to_csv(os.path.join(out, "eval.csv"), index=False)
-timing.to_csv(os.path.join(out, "timing.csv"), index=False)
-make_plots(per_query, timing, os.path.join(out, "plots"))
-with pd.option_context("display.width", 250, "display.max_columns", 30, "display.float_format", "{:.3f}".format):
-    print(metrics[metrics["k"] == 10].to_string(index=False), "\n")
-    print(timing.to_string(index=False), "\n")
-
-# 4. Hybrid search: latency per filter + correctness checks (raise on failure)
+# 3. Hybrid search: latency per filter + correctness checks (raise on failure)
 t0 = time.perf_counter()
 h_timing, checks = run_hybrid(index, queries[:args.hybrid_queries], scenarios=SCENARIOS)
 print(f"hybrid: {time.perf_counter() - t0:.0f} s")

@@ -8,13 +8,11 @@ setup:                ## venv + pinned requirements
 	python3.14 -m venv .venv
 	$(PY) -m pip install -r requirements.txt
 
-part1:                ## search index, flat vs beam, hybrid search (vehicle dataset)
-	$(PY) -m search build
-	$(PY) -m search eval
+part1:                ## flat vs beam, hybrid search (vehicle dataset)
 	$(PY) -m search hybrid
 	$(PY) results/compare_part1.py
 
-large:                ## the same on a 10^4 sample of the large dataset (needs the zip; ~15 min to embed)
+large:                ## flat vs beam and hybrid speed on a 10^4 sample of the large dataset (needs the zip; ~15 min to embed)
 	$(PY) experiment-big-data/sample.py --n 10000
 	$(PY) experiment-big-data/run.py --n 10000
 	$(PY) results/compare_part1.py --sample 10000
