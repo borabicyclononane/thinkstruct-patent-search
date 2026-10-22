@@ -361,9 +361,10 @@ def synthetic_page():
         found = {claim_ids[l] for l in index.beam_search(qv, B).claims} & want
         ranking = [claim_ids[l] for l in index.flat_search(qv).claims]
         rows.append({"method": name, "config": best.get(name, "").replace("towers ", "").replace(" per-level q", ""),
-                     f"beam B={B}": "✔" if found else "✗", "rank in flat search": min(ranking.index(w) for w in want) + 1})
+                     f"beam B={B}": "✔" if found == want else "✗", "rank in flat search": max(ranking.index(w) for w in want) + 1})
     st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
-    st.caption("Rank: position of the (best) source among all 1,191 claims when every claim is scored.")
+    st.caption("Found: every source came back (a combination needs both). Rank: position of the (last) source among "
+               "all 1,191 claims when every claim is scored.")
 
 
 def results_page():

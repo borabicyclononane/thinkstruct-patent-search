@@ -57,18 +57,21 @@ p3 = pd.read_csv("results/part3.csv")
 train_s = {"shared towers, no routing loss": "8 s", "shared towers": "14 s", "per-level towers": "26 s"}
 label = {"raw 768": "raw 768-d", "PCA-64": "PCA-64", "shared towers, no routing loss": "shared towers, no routing loss",
          "shared towers": "shared towers", "per-level towers": "per-level towers"}
-rows = []
-for m in label:
-    t = p3[(p3.split == "test") & (p3.method == m)].set_index("dataset")
-    v = p3[(p3.split == "val") & (p3.method == m) & (p3.dataset == "all")].iloc[0]
-    cfg = t.loc["all", "config"] if isinstance(t.loc["all", "config"], str) else "—"
-    cfg = cfg.replace("towers ", "").replace(" per-level q", "").replace("lr=0.0001", "lr=1e-4").replace("lr=0.0003", "lr=3e-4").replace("lr=0.001", "lr=1e-3")
-    sig = "—" if m == "raw 768" else f"+{t.loc['all', 'vs_raw_better']} / −{t.loc['all', 'vs_raw_worse']}, {pval(t.loc['all', 'vs_raw_p'])}"
-    rows.append([label[m], cfg, f3(t.loc["paraphrase", "source_returned"]), f3(t.loc["element_reuse", "source_returned"]),
-                 f3(t.loc["combination", "source_returned"]), f3(t.loc["all", "source_returned"]), sig, f3(v.source_returned),
-                 f3(t.loc["all", "ms_median"]), train_s.get(m, "—")])
-p3_t = table(["method", "config", "paraphrase", "element reuse", "combination", "all", "all vs raw 768", "val all",
-              "ms / query", "training"], rows, left=2)
+def part3(B):
+    """Test table at beam width B."""
+    rows = []
+    for m in label:
+        t = p3[(p3.split == "test") & (p3.method == m) & (p3.B == B)].set_index("dataset")
+        v = p3[(p3.split == "val") & (p3.method == m) & (p3.dataset == "all") & (p3.B == B)].iloc[0]
+        cfg = t.loc["all", "config"] if isinstance(t.loc["all", "config"], str) else "—"
+        cfg = cfg.replace("towers ", "").replace(" per-level q", "").replace("lr=0.0001", "lr=1e-4").replace("lr=0.0003", "lr=3e-4").replace("lr=0.001", "lr=1e-3")
+        sig = "—" if m == "raw 768" else f"+{t.loc['all', 'vs_raw_better']} / −{t.loc['all', 'vs_raw_worse']}, {pval(t.loc['all', 'vs_raw_p'])}"
+        rows.append([label[m], cfg, f3(t.loc["paraphrase", "source_returned"]), f3(t.loc["element_reuse", "source_returned"]),
+                     f3(t.loc["combination", "source_returned"]), f3(t.loc["all", "source_returned"]), sig, f3(v.source_returned),
+                     f3(t.loc["all", "ms_median"]), train_s.get(m, "—")])
+    return table(["method", "config", "paraphrase", "element reuse", "combination", "all", "all vs raw 768", "val all",
+                  "ms / query", "training"], rows, left=2)
+
 
 readme = f"""# Results
 
@@ -148,16 +151,22 @@ The "no filter" row shows plain flat search and plain beam search.
 
 **Split.** Train / val / test by patent, 80/10/10. Test has 119 queries per dataset.
 
-**Metric.** The share of queries whose source claim is among the claims beam search returns at **B=5**, over a tree of all 1,191 claims. For a combination, either source counts.
+**Metric.** The share of queries whose source claim is among the claims beam search returns at **B=5** and **B=30**, over a tree of all 1,191 claims. A combination counts only if **both** of its source claims come back.
 
 **Methods.** All are on frozen PatentSBERTa embeddings.
 - **raw 768-d** and **PCA-64:** PCA is fit on the training claims.
 - **Towers:** a 768 → 64 query tower and key tower, trained with InfoNCE. "Routing loss" adds a cross-entropy at each CPC level, so the query scores its source's ancestors above the other nodes. **Per-level towers** use a separate query tower for each level of the tree.
-- **Tower configuration:** each tower row uses the grid configuration with the best **val** score at B=5. The table therefore reports **test**, which was not used for any choice.
+- **Tower configuration:** each tower row uses the grid configuration with the best **val** score at B=5. The tables therefore report **test**, which was not used for any choice.
 - **all vs raw 768:** test queries where the method finds the source and raw 768-d doesn't, then the reverse, with an exact two-sided sign test.
 - **Training:** wall time for 20 epochs on CPU, including a beam-search evaluation on the dev set after every epoch.
 
-{p3_t}
+**B=5**
+
+{part3(5)}
+
+**B=30** (same configurations, chosen at B=5)
+
+{part3(30)}
 
 Val results and per-dataset sign tests are in `part3.csv`. The full training grid is in `../training/runs/final/`.
 """

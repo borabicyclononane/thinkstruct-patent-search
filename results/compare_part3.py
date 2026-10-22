@@ -5,7 +5,7 @@ towers; per synthetic dataset; val and test; plus query latency.
 
 Towers, each the configuration of the run's grid with the highest val share returned at B=5 (search_eval.csv):
 shared towers without the routing loss, shared towers (any routing weight), per-level query towers. Val picked them,
-so test is the unbiased number. Source returned = a source claim is among the returned claims (combination: either).
+so test is the unbiased number. Source returned = the source claim is among the returned claims (combination: both sources).
 Sign test: paired, against raw 768 at the same width. Writes results/part3.csv.
 """
 import argparse
@@ -29,7 +29,7 @@ ap = argparse.ArgumentParser()
 ap.add_argument("--run", default="training/runs/final")
 ap.add_argument("--bundle", default="training/bundles/full.npz")
 ap.add_argument("--select-width", type=int, default=5)
-ap.add_argument("--widths", default="5")
+ap.add_argument("--widths", default="5,30")
 ap.add_argument("--repeats", type=int, default=3)
 args = ap.parse_args()
 os.chdir(ROOT)
@@ -60,7 +60,7 @@ for split in ("val", "test"):
             for qi in qs:
                 got = set(indexes[method].beam_search(b["query_vecs"][qi], B).claims.tolist())
                 src = [leaf_of_claim[a] for a in b["answers"][qi] if a >= 0]
-                found.append(any(s in got for s in src))
+                found.append(all(s in got for s in src))
             found = np.array(found)
             hits[split, method, B] = found
             for d in ["all", "paraphrase", "element_reuse", "combination"]:

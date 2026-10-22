@@ -23,10 +23,12 @@ Per-level query towers (--query-towers per_level): a separate query tower for ea
 patent, subgroup, main group, subclass; section and class have a single node and use the subclass tower), all from the
 same W. The claim loss trains the claim tower, each level's routing loss trains that level's tower; one key tower.
 
-Evaluation 1, ranking: each eval query ranks all claims. Recall@k = a source in the top k; MRR uses the first source.
+Evaluation 1, ranking: each eval query ranks all claims. Recall@k = every source in the top k (a combination needs
+both); MRR uses the rank of the last source.
 Evaluation 2, search (the one that matters): the Part 1 index (search/index.py) over all claims, with the key map as
 `project` and the query map as `project_query`; each eval query goes through flat search and beam search at each
-width: does its source claim come back, and at what rank (R@1, R@10); do both sources of a combination come back.
+width: does its source claim come back (a combination: both sources), and at what rank (R@1, R@10); does at least
+one source of a combination come back.
 Methods: raw 768-d cosine; PCA-64 (fit on train-split claims, applied to queries and claims); towers at init;
 towers trained with the claim loss only; towers trained with claim + routing loss.
 """
@@ -99,17 +101,17 @@ def hierarchy(b, claims: np.ndarray) -> tuple[list[np.ndarray], list[np.ndarray]
 def evaluate(zq: np.ndarray, zk: np.ndarray, answers: np.ndarray, datasets: np.ndarray) -> dict:
     s = zq @ zk.T
     order = np.argsort(-s, axis=1)
-    rank = np.full(answers.shape, np.inf)
+    rank = np.zeros(answers.shape)  # 0 = no source in this column, never the max
     for col in range(answers.shape[1]):
         ok = answers[:, col] >= 0
         rank[ok, col] = np.argmax(order[ok] == answers[ok, col][:, None], axis=1) + 1
-    first = rank.min(1)
+    last = rank.max(1)  # a combination counts once both sources are in
     out = {}
     for name in ["all", *sorted(set(datasets))]:
         m = np.ones(len(s), bool) if name == "all" else datasets == name
-        row = {"n": int(m.sum()), "mrr": float((1 / first[m]).mean()), **{f"recall@{k}": float((first[m] <= k).mean()) for k in KS}}
+        row = {"n": int(m.sum()), "mrr": float((1 / last[m]).mean()), **{f"recall@{k}": float((last[m] <= k).mean()) for k in KS}}
         rng = np.random.default_rng(0)  # bootstrap 95% CI of the MRR
-        boot = [(1 / first[m][rng.integers(0, m.sum(), m.sum())]).mean() for _ in range(1000)]
+        boot = [(1 / last[m][rng.integers(0, m.sum(), m.sum())]).mean() for _ in range(1000)]
         row["mrr_ci95"] = [float(np.percentile(boot, 2.5)), float(np.percentile(boot, 97.5))]
         out[name] = row
     return out
@@ -143,15 +145,16 @@ def search_eval(b, qproj, kproj, eval_q: np.ndarray, widths: list[int], flat: bo
             got = [claim_of_leaf[l] for l in run(b["query_vecs"][qi]).claims]
             src = [a for a in b["answers"][qi] if a >= 0]
             pos = [got.index(a) + 1 for a in src if a in got]
-            per.append({"dataset": b["query_dataset"][qi], "returned": len(got), "found": bool(pos),
-                        "found_all": len(pos) == len(src), "r@1": bool(pos) and min(pos) <= 1, "r@10": bool(pos) and min(pos) <= 10})
+            found = len(pos) == len(src)  # a combination needs both sources
+            per.append({"dataset": b["query_dataset"][qi], "returned": len(got), "found": found,
+                        "found_any": bool(pos), "r@1": found and max(pos) <= 1, "r@10": found and max(pos) <= 10})
         for ds in ["all", *sorted({p["dataset"] for p in per})]:
             sel = [p for p in per if ds == "all" or p["dataset"] == ds]
             two = [p for p in sel if p["dataset"] == "combination"]
             rows.append({"search": name, "dataset": ds, "n": len(sel), "claims_returned": float(np.mean([p["returned"] for p in sel])),
                          "source_returned": float(np.mean([p["found"] for p in sel])),
                          "r@1": float(np.mean([p["r@1"] for p in sel])), "r@10": float(np.mean([p["r@10"] for p in sel])),
-                         "both_sources_returned": float(np.mean([p["found_all"] for p in two])) if two else None})
+                         "any_source_returned": float(np.mean([p["found_any"] for p in two])) if two else None})
     return rows
 
 
